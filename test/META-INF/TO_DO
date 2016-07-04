@@ -1,0 +1,2 @@
+Remove SearchResults.setBatchIndex, SearchResults.getBatchIndex
+Change all getBatch(), xxxBatch() etc to getPage(), xxxPage() etc

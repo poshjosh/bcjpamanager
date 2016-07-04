@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.1" xmlns="http://xmlns.jcp.org/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd">
+  <persistence-unit name="idiscpu" transaction-type="RESOURCE_LOCAL">
+    <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+    <class>com.idisc.pu.entities.Feed</class>
+    <class>com.idisc.pu.entities.Archivedfeed</class>
+    <class>com.idisc.pu.entities.Comment</class>
+    <class>com.idisc.pu.entities.Howdidyoufindus</class>
+    <class>com.idisc.pu.entities.Favoritefeed</class>
+    <class>com.idisc.pu.entities.Feeduser</class>
+    <class>com.idisc.pu.entities.Site</class>
+    <class>com.idisc.pu.entities.Country</class>
+    <class>com.idisc.pu.entities.Emailstatus</class>
+    <class>com.idisc.pu.entities.Sitetype</class>
+    <class>com.idisc.pu.entities.Extractedemail</class>
+    <class>com.idisc.pu.entities.Feedhit</class>
+    <class>com.idisc.pu.entities.Installation</class>
+    <class>com.idisc.pu.entities.Gender</class>
+    <class>com.idisc.pu.entities.Bookmarkfeed</class>
+    <properties>
+      <property name="eclipselink.canonicalmodel.subpackage" value="one"/>  
+      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/loosebox_idisc?zeroDateTimeBehavior=convertToNull"/>
+      <property name="javax.persistence.jdbc.user" value="loosebox_root"/>
+      <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
+      <property name="javax.persistence.jdbc.password" value="7345xT-eeSw"/>
+      <property name="eclipselink.connection-pool.default.initial" value="1"/>
+      <property name="eclipselink.connection-pool.default.min" value="64"/>
+      <property name="eclipselink.connection-pool.default.max" value="64"/>
+      <property name="eclipselink.jdbc.cache-statements" value="true"/>
+      <property name="eclipselink.jdbc.batch-writing" value="JDBC"/> 
+      <property name="eclipselink.jdbc.batch-writing.size" value="1000"/>      
+      <!--property name="eclipselink.logging.level.sql" value="FINE"/-->
+      <!--property name="eclipselink.logging.parameters" value="true"/-->
+      <!--property name="eclipselink.persistencexml" value="META-INF/persistence_remote.xml"/-->      
+    </properties>
+  </persistence-unit>
+  <persistence-unit name="looseboxespu" transaction-type="RESOURCE_LOCAL">
+    <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+    <class>com.looseboxes.pu.entities.Productcategory</class>
+    <class>com.looseboxes.pu.entities.Country</class>
+    <class>com.looseboxes.pu.entities.Availability</class>
+    <class>com.looseboxes.pu.entities.Address</class>
+    <class>com.looseboxes.pu.entities.Payment</class>
+    <class>com.looseboxes.pu.entities.Howdidyoufindus</class>
+    <class>com.looseboxes.pu.entities.Paymentmethod</class>
+    <class>com.looseboxes.pu.entities.Paymentstatus</class>
+    <class>com.looseboxes.pu.entities.Userstatus</class>
+    <class>com.looseboxes.pu.entities.Currency</class>
+    <class>com.looseboxes.pu.entities.Product</class>
+    <class>com.looseboxes.pu.entities.Productcomment</class>
+    <class>com.looseboxes.pu.entities.Userpaymentmethod</class>
+    <class>com.looseboxes.pu.entities.Itemtype</class>
+    <class>com.looseboxes.pu.entities.Shippingstatus</class>
+    <class>com.looseboxes.pu.entities.Siteuser</class>
+    <class>com.looseboxes.pu.entities.Orderproduct</class>
+    <class>com.looseboxes.pu.entities.Productvariant</class>
+    <class>com.looseboxes.pu.entities.Orderstatus</class>
+    <class>com.looseboxes.pu.entities.Gender</class>
+    <class>com.looseboxes.pu.entities.Productstatus</class>
+    <class>com.looseboxes.pu.entities.Productsubcategory</class>
+    <class>com.looseboxes.pu.entities.Brand</class>
+    <class>com.looseboxes.pu.entities.Shippingdetails</class>
+    <class>com.looseboxes.pu.entities.Productorder</class>
+    <class>com.looseboxes.pu.entities.Region</class>
+    <class>com.looseboxes.pu.entities.Chatmessage</class>
+    <class>com.looseboxes.pu.entities.Email</class>
+    <class>com.looseboxes.pu.entities.Oauthuser</class>
+    <class>com.looseboxes.pu.entities.Supportticket</class>
+    <properties>
+      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/ivyfash_db0?zeroDateTimeBehavior=convertToNull"/>
+      <property name="javax.persistence.jdbc.user" value="ivyfash_root"/>
+      <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
+      <property name="javax.persistence.jdbc.password" value="7345xT-eeSw"/>
+      <property name="eclipselink.connection-pool.default.initial" value="1"/>
+      <!--property name="eclipselink.connection-pool.default.min" value="64"/-->
+      <!--property name="eclipselink.connection-pool.default.max" value="64"/-->
+      <property name="eclipselink.jdbc.cache-statements" value="true"/>
+      <property name="eclipselink.jdbc.batch-writing" value="JDBC"/>
+      <!--property name="eclipselink.jdbc.batch-writing.size" value="1000"/-->
+      <!--property name="eclipselink.logging.level.sql" value="FINE"/-->
+      <!--property name="eclipselink.logging.parameters" value="true"/-->
+    </properties>
+  </persistence-unit>
+  <persistence-unit name="idisc_looseboxespu" transaction-type="RESOURCE_LOCAL">
+    <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+    <class>com.idisc.pu.entities.external.UnofficialEmails</class>
+    <properties>
+      <property name="eclipselink.canonicalmodel.subpackage" value="two"/>  
+      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/loosebox_db2?zeroDateTimeBehavior=convertToNull"/>
+      <property name="javax.persistence.jdbc.user" value="loosebox_root"/>
+      <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
+      <property name="javax.persistence.jdbc.password" value="7345xT-eeSw"/>
+      <!--property name="eclipselink.connection-pool.default.initial" value="1"/-->
+      <!--property name="eclipselink.connection-pool.default.min" value="64"/-->
+      <!--property name="eclipselink.connection-pool.default.max" value="64"/-->
+      <property name="eclipselink.jdbc.cache-statements" value="true"/>
+      <!--property name="eclipselink.jdbc.batch-writing" value="JDBC"/--> 
+      <!--property name="eclipselink.jdbc.batch-writing.size" value="1000"/-->      
+      <!--property name="eclipselink.logging.level.sql" value="FINE"/-->
+      <!--property name="eclipselink.logging.parameters" value="true"/-->
+      <!--property name="eclipselink.persistencexml" value="META-INF/persistence_remote.xml"/-->      
+    </properties>
+  </persistence-unit>
+</persistence>
