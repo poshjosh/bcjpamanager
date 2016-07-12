@@ -1,8 +1,5 @@
 package com.bc.jpa;
 
-import com.bc.jpa.ReferenceTypeEntityController;
-import com.bc.jpa.JpaUtil;
-import com.bc.jpa.PersistenceMetaData;
 import com.bc.jpa.exceptions.NonexistentEntityException;
 import com.bc.jpa.exceptions.PreexistingEntityException;
 import java.util.Collection;
@@ -24,11 +21,9 @@ import javax.persistence.EntityNotFoundException;
 public class ReferencingEntityControllerOld<K, k, E> 
         extends ReferenceTypeEntityController<K, k, E, K>{
     
-    public ReferencingEntityControllerOld(
-            PersistenceMetaData puMeta, 
-            Class referencingClass) {
+    public ReferencingEntityControllerOld(JpaContext jpaContext, Class referencingClass) {
     
-        super(puMeta, referencingClass);
+        super(jpaContext, referencingClass);
     }
     
     private Class getReferenceClass() {

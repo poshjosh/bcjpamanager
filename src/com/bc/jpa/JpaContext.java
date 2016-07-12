@@ -3,8 +3,12 @@ package com.bc.jpa;
 import com.bc.jpa.query.JPQL;
 import com.bc.jpa.query.QueryBuilder;
 import com.bc.jpa.fk.EnumReferences;
+import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.Map;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.JoinColumn;
 
 /**
  * @(#)ControllerFactory.java   20-Mar-2014 18:09:39
@@ -19,12 +23,29 @@ import javax.persistence.EntityManager;
  * @since    2.0
  */
 public interface JpaContext {
+    
+    boolean isOpen();
+    
+    void close();
+    
+    /**
+     * @return The path to the persistence configuration file usually <tt>META-INF/persistence.xml</tt>
+     */
+    URI getPersistenceConfigURI();
 
+    EntityManagerFactory getEntityManagerFactory(Class entityClass);
+    
+    EntityManagerFactory getEntityManagerFactory(String persistenceUnit);    
+        
     <T> QueryBuilder<T> getQueryBuilder(Class<T> entityAndResultType);
     
     <T> QueryBuilder<T> getQueryBuilder(Class entityType, Class<T> resultType);
     
     Object getReference(Class referencingClass, String col, Object val);
+    
+    Object getReference(
+            EntityManager em, Class referencingType, 
+            Map<JoinColumn, Field> joinCols, String col, Object val);
     
     <E> JPQL<E> getJpql(Class<E> entityClass);
 

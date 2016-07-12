@@ -1,40 +1,22 @@
 package com.bc.jpa.query;
 
-import com.bc.jpa.TestApp;
 import com.looseboxes.pu.entities.Orderproduct;
 import com.looseboxes.pu.entities.Product;
 import com.looseboxes.pu.entities.Productorder;
 import com.looseboxes.pu.entities.Productvariant;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
-import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.JoinType;
-import junit.framework.TestCase;
 import org.junit.Test;
-import com.bc.jpa.JpaContext;
 
 /**
  * @author Josh
  */
-public class QueryBuilderImplTest extends TestCase {
-
-    private static final Class entityType = Product.class;
-    public JpaContext getJpaContext() {
-        return TestApp.getInstance().getLbJpaContext();
-    }
-    
-    private static List<Integer> ids;
-
-    private static Integer ID;
+public class QueryBuilderImplTest extends QueryBuilderTestBase {
 
     public QueryBuilderImplTest(String testName) {
         super(testName);
-        if(ids == null) {
-            ids = selectLastIds(20);
-            ID = ids.get(ids.size() - 1);
-        }
     }
     
     @Test
@@ -44,14 +26,19 @@ System.out.println("#testSearchAndWhereGreaterOrEquals");
         
         try(QueryBuilder<Object[]> instance = createQueryBuilder(Object[].class)) {
         
-            TypedQuery<Object[]> tq = instance.forType(entityType)
-                    .select("productid", "productName", "price")
-                    .search("dress", "productName", "description", "keywords", "model")
+            final String ID_COL = "productid";
+            final String query = "dress";
+            final String queryExpression = "%"+query+"%";
+            final String [] colsToSelect = new String[]{"productid", "productName", "price"};
+            final String [] colsToSearch = new String[]{"productName", "description", "keywords", "model"};
+            
+            TypedQuery<Object[]> tq = instance.forType(ENTITY_TYPE)
+                    .select(colsToSelect)
+                    .where(colsToSearch, QueryBuilder.LIKE, queryExpression, QueryBuilder.OR)
                     .and()
-                    .where("productid", QueryBuilder.GREATER_OR_EQUALS, ID)
-                    .descOrder("productid")
+                    .where(ID_COL, QueryBuilder.GREATER_OR_EQUALS, SELECTED_PRODUCTID)
+                    .descOrder(ID_COL)
                     .build();
-
             List<Object[]> results = tq.getResultList();
 this.printResults(results, true);
         }
@@ -64,10 +51,10 @@ System.out.println("#testSelectAndLikeAndGreaterOrEquals");
         
         try(QueryBuilder<Object[]> instance = createQueryBuilder(Object[].class)) {
             
-            TypedQuery<Object[]> tq = instance.forType(entityType)
+            TypedQuery<Object[]> tq = instance.forType(ENTITY_TYPE)
                     .select("productid", "productName", "price", "description")
                     .where("productName", QueryBuilder.LIKE, "%pepperts%", QueryBuilder.AND)
-                    .where("productid", QueryBuilder.GREATER_OR_EQUALS, ID - 100)
+                    .where("productid", QueryBuilder.GREATER_OR_EQUALS, SELECTED_PRODUCTID - 100)
                     .ascOrder("productid")
                     .build();
 
@@ -80,8 +67,6 @@ this.printResults(results, true);
     public void testJoin() {
         
 System.out.println("#testJoin");
-        
-        final EntityManager em = getJpaContext().getEntityManager(entityType);
         
         List<Product> results = this.selectRange(499, 528);
         
@@ -121,25 +106,25 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
     @Test
     public void testResetAndCommit() {
         
-        try(QueryBuilder instance = createQueryBuilder(entityType)) {
+        try(QueryBuilder instance = createQueryBuilder(ENTITY_TYPE)) {
         
             final String COLUMN = "productid";
 
-            TypedQuery<Product> tq = instance.forType(entityType).descOrder(COLUMN).build();
+            TypedQuery<Product> tq = instance.forType(ENTITY_TYPE).descOrder(COLUMN).build();
 
-            assertEquals("QueryBuilder should be commited after calling #createQuery, but is not commited", instance.isCommited(), true);
+            assertEquals("QueryBuilder should be commited after calling #build, but is not commited", instance.isCommited(), true);
 
             try{
 
                 instance.and(); 
 
-                fail("QueryBuilder should not allow any further operations except #createQuery operations when commited, but and() method returned successfully");
+                fail("QueryBuilder should not allow any further operations except #build operations when commited, but and() method returned successfully");
 
             }catch(RuntimeException indicatesSuccess) { }
 
 //            instance.reset();
 
-//            tq = instance.forType(entityType).where(COLUMN, QueryBuilder.EQUALS, 519).descOrder(COLUMN).build();
+//            tq = instance.forType(ENTITY_TYPE).where(COLUMN, QueryBuilder.EQUALS, 519).descOrder(COLUMN).build();
 
 //            Product result = tq.getSingleResult();
         }
@@ -153,7 +138,7 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_YEAR, -20);
 
-            TypedQuery<Object[]> tq = instance.forType(entityType)
+            TypedQuery<Object[]> tq = instance.forType(ENTITY_TYPE)
                     .select("productid", "productName", "price")
                     .search("girls dress", "productName", "description", "keywords", "model")
                     .and().where("price", QueryBuilder.GREATER_OR_EQUALS, 2_000)
@@ -165,70 +150,5 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
 
 this.printResults(results, true);
         }
-    }
-    
-    public List<Product> selectRange(Integer start, Integer end) {
-        
-System.out.println(this.getClass().getName()+"#selectRange("+start+", "+end+")");
-
-        try(QueryBuilder instance = createQueryBuilder(entityType)) {
-        
-            final String COLUMN = "productid";
-
-            TypedQuery<Product> tq = instance.forType(entityType)
-                    .where(COLUMN, QueryBuilder.GREATER_OR_EQUALS, start, QueryBuilder.AND)
-                    .where(COLUMN, QueryBuilder.LESS_THAN, end)        
-                    .descOrder(COLUMN)
-                    .build();
-
-            List<Product> results = tq.getResultList();
-
-            return results;
-        }
-    }
-    
-    public List<Integer> selectLastIds(int n) {
-        
-        try(QueryBuilder<Integer> instance = createQueryBuilder(Integer.class)) {
-        
-            TypedQuery<Integer> tq = instance
-                    .forType(Product.class)
-                    .select("productid")
-                    .descOrder("productid").build();
-
-            tq.setFirstResult(0);
-            tq.setMaxResults(n);
-
-            List<Integer> output = tq.getResultList();
-
-            return output;
-        }
-    }
-    
-    public void printResults(List results, boolean deep) {
-        System.out.println("Found: "+(results==null?null:results.size())+" results");
-        if(deep) {
-            for(Object result:results) {
-                if(result instanceof Object []) {
-System.out.println(Arrays.toString((Object[])result));
-                }else{
-System.out.println(result);                    
-                }
-            }
-        }
-    }
-    
-    public <R> QueryBuilder<R> createQueryBuilder(Class<R> resultType) {
-        return new QueryBuilderImpl(this.getJpaContext().getEntityManager(entityType), resultType){
-            @Override
-            public TypedQuery<R> build() {
-
-//String output = String.format("#build()\n%s", this);
-
-//System.out.println(this.getClass().getSimpleName() + output);
-
-                return super.build();
-            }
-        };
     }
 }

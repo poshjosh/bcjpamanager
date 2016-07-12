@@ -18,11 +18,9 @@ import com.bc.jpa.exceptions.PreexistingEntityException;
  */
 public class RelatedEntityController extends DefaultEntityController {
 
-    public RelatedEntityController(
-            PersistenceMetaData puMeta, 
-            Class referenceClass) {
+    public RelatedEntityController(JpaContext jpaContext, Class referenceClass) {
     
-        super(puMeta, referenceClass);
+        super(jpaContext, referenceClass);
     }
     
     @Override
@@ -87,9 +85,9 @@ public class RelatedEntityController extends DefaultEntityController {
         boolean isReferencing = metaData.getReferenceClasses(
                 entityClass) != null;
         if(isReferencing) {
-            controller = new ReferencingEntityController(metaData, entityClass);
+            controller = new ReferencingEntityController(this.getJpaContext(), entityClass);
         }else if(isReference) {        
-            controller = new ReferenceEntityController(metaData, entityClass);
+            controller = new ReferenceEntityController(this.getJpaContext(), entityClass);
         }else {        
             throw new UnsupportedOperationException();
         }

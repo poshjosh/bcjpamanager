@@ -1,6 +1,6 @@
 package com.bc.jpa.query;
 
-import com.bc.jpa.JpaUtil;
+import com.bc.jpa.JpaContext;
 import com.bc.jpa.PersistenceMetaData;
 import com.bc.util.XLogger;
 import java.io.Serializable;
@@ -47,14 +47,12 @@ public class JPQLImpl<E> implements JPQL<E>, Serializable {
     
     private String comparisonOperator = "=";
     
-    private PersistenceMetaData metaData;
+    private final JpaContext jpaContext;
     
     private Class<E> entityClass;
     
-    public JPQLImpl() { }
-    
-    public JPQLImpl(PersistenceMetaData puMeta, Class<E> entityClass) {
-        this.metaData = puMeta;
+    public JPQLImpl(JpaContext jpaContext, Class<E> entityClass) {
+        this.jpaContext = jpaContext;
         this.entityClass = entityClass;
     }
     
@@ -236,7 +234,7 @@ public class JPQLImpl<E> implements JPQL<E>, Serializable {
 
     /**
      * Updates the query with the parameters contained in the <tt>whereClauseParameters</tt>
-     * @param em Optional. May be null, in which case a new instance is obtained via {@link #getEntityManager()}
+     * @param em The EntityManager
      * @param q The query whose parameters will be updated
      * @param whereClauseParameters The parameter_name=parameter_value pairs to use in updating the query
      * @param convertCrossReferences If true cross references will be converted to their entity values 
@@ -256,33 +254,21 @@ XLogger.getInstance().log(Level.FINER, "Updating Query with: {0}", this.getClass
         }else{
             joinColumns = null;
         }
-
+        
+        final boolean convertPossible = (convertCrossReferences && (joinColumns != null && !joinColumns.isEmpty()));
+        
         for(Object key:whereClauseParameters.keySet()) {
             
             String col = key.toString();
             
             Object val = whereClauseParameters.get(key); 
 
-            if(convertCrossReferences && (joinColumns != null && !joinColumns.isEmpty())) {
+            if(convertPossible) {
             
-                
-                EntityManager myEm = null;
-                try{
-                    if(em == null) {
-                        // Since we created this within this method, we have to close it here too
-                        myEm = this.getEntityManagerFactory().createEntityManager();
-                        em = myEm;
-                    }
+                Object ref = jpaContext.getReference(em, this.entityClass, joinColumns, col, val);
 
-                    Object ref = JpaUtil.getReference(em, this.entityClass, joinColumns, col, val);
-
-                    if(ref != null) {
-                        val = ref;
-                    }
-                }finally{
-                    if(myEm != null) {
-                        myEm.close();
-                    }
+                if(ref != null) {
+                    val = ref;
                 }
             }
 
@@ -292,7 +278,7 @@ XLogger.getInstance().log(Level.FINER, "Updating Query with: {0}", this.getClass
     
     /**
      * Updates the query with the values for the column specified
-     * @param em Optional. May be null, in which case a new instance is obtained via {@link #getEntityManager()}
+     * @param em The EntityManager
      * @param q The query whose parameters will be updated
      * @param col The column whose values will be updated
      * @param values The column values to be updated
@@ -334,23 +320,10 @@ this.getClass(), col, (values==null?null:Arrays.toString(values)));
             
             if(convertCrossReferences && (joinColumns != null && !joinColumns.isEmpty())) {
 
-                EntityManager myEm = null;
-                try{
-                    if(em == null) {
-                        // Since we created this within this method, we have to close it here too
-                        myEm = this.getEntityManagerFactory().createEntityManager();
-                        em = myEm;
-                    }
+                Object ref = this.jpaContext.getReference(em, this.entityClass, joinColumns, col, val);
 
-                    Object ref = JpaUtil.getReference(em, this.entityClass, joinColumns, col, val);
-
-                    if(ref != null) {
-                        val = ref;
-                    }
-                }finally{
-                    if(myEm != null) {
-                        myEm.close();
-                    }
+                if(ref != null) {
+                    val = ref;
                 }
             }
 XLogger.getInstance().log(Level.FINER, "At {0} setting {1} to {2}", this.getClass(), i+1, col, val);            
@@ -361,9 +334,7 @@ XLogger.getInstance().log(Level.FINER, "At {0} setting {1} to {2}", this.getClas
     
     @Override
     public EntityManagerFactory getEntityManagerFactory() {
-        return JpaUtil.getEntityManagerFactory(
-                this.metaData,
-                this.metaData.getDatabaseName(entityClass));
+        return jpaContext.getEntityManagerFactory(entityClass);
     }
 
     @Override
@@ -714,12 +685,7 @@ XLogger.getInstance().log(Level.FINE, "Query: {0}", this.getClass(), selectQuery
     }
 
     @Override
-    public PersistenceMetaData getMetaData() {
-        return metaData;
-    }
-
-    @Override
-    public void setMetaData(PersistenceMetaData metaData) {
-        this.metaData = metaData;
+    public final PersistenceMetaData getMetaData() {
+        return jpaContext.getMetaData();
     }
 }

@@ -30,11 +30,9 @@ import javax.persistence.EntityTransaction;
 public class ReferenceEntityController<E, e, K> 
         extends ReferenceTypeEntityController<E, e, E, K>{
     
-    public ReferenceEntityController(
-            PersistenceMetaData puMeta, 
-            Class referenceClass) {
+    public ReferenceEntityController(JpaContext jpaContext, Class referenceClass) {
     
-        super(puMeta, referenceClass);
+        super(jpaContext, referenceClass);
     }
     
     private Object getReferencingValue(K referencing, String columnName) {

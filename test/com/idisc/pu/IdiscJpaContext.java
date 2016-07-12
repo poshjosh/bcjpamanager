@@ -1,8 +1,7 @@
 package com.idisc.pu;
 
 import com.bc.jpa.JpaContextImpl;
-import com.bc.jpa.PersistenceLoader;
-import com.bc.jpa.PersistenceMetaData;
+import com.bc.jpa.util.PersistenceURISelector;
 import com.bc.sql.MySQLDateTimePatterns;
 import com.bc.sql.SQLDateTimePatterns;
 import java.io.File;
@@ -11,7 +10,7 @@ import java.net.URI;
 
 public class IdiscJpaContext extends JpaContextImpl{
     
-  private static class PersistenceUriFilter implements PersistenceLoader.URIFilter {
+  private static class PersistenceUriFilter implements PersistenceURISelector.URIFilter {
     @Override
     public boolean accept(URI uri) {
         return uri.toString().contains("idisc");
@@ -30,7 +29,7 @@ public class IdiscJpaContext extends JpaContextImpl{
     super(persistenceFile, new PersistenceUriFilter(), dateTimePatterns, References.ENUM_TYPES);
   }
     
-//    public IdiscJpaContext(String persistenceFile, PersistenceLoader.URIFilter uriFilter, SQLDateTimePatterns dateTimePatterns, ParametersFormatter paramFmt) throws IOException {
+//    public IdiscJpaContext(String persistenceFile, PersistenceURISelector.URIFilter uriFilter, SQLDateTimePatterns dateTimePatterns, ParametersFormatter paramFmt) throws IOException {
 //        super(persistenceFile, uriFilter, dateTimePatterns, paramFmt, References.ENUM_TYPES);
 //    }
 
@@ -44,9 +43,5 @@ public class IdiscJpaContext extends JpaContextImpl{
 
   public IdiscJpaContext(File persistenceFile, SQLDateTimePatterns dateTimePatterns) throws IOException {
     super(persistenceFile, dateTimePatterns, References.ENUM_TYPES);
-  }
-
-  public IdiscJpaContext(PersistenceMetaData metaData, SQLDateTimePatterns dateTimePatterns) {
-    super(metaData, dateTimePatterns, References.ENUM_TYPES);
   }
 }

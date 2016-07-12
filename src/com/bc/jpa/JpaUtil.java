@@ -1,24 +1,14 @@
 package com.bc.jpa;
 
 import com.bc.util.XLogger;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import javax.persistence.Column;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.JoinColumn;
-import javax.persistence.Persistence;
 
 /**
  * @(#)DatabaseObjects.java   14-May-2014 23:10:25
@@ -34,138 +24,6 @@ import javax.persistence.Persistence;
  */
 public class JpaUtil {
 
-    private static transient final Map<String, EntityManagerFactory> entityManagerFactories = new HashMap<>();
-
-    public static EntityManagerFactory getEntityManagerFactory(
-            PersistenceMetaData metaData, 
-            String databaseName) {
-
-        String persistenceUnit = metaData.getPersistenceUnitName(databaseName);
-        
-        EntityManagerFactory factory = entityManagerFactories.get(persistenceUnit);
-        
-        Properties props = null;
-        
-        URL url = null;
-        
-        if(factory == null) {
-            
-            final String persistenceURI = metaData.getURI();
-
-            try{
-
-XLogger.getInstance().log(Level.INFO, 
-        "======================== Creating EntityManagerFactory =========================\n"+
-        "Database: {0}, persistenceUnit: {1}, URI: {2}",
-        JpaUtil.class, databaseName, persistenceUnit, persistenceURI);
-
-XLogger.getInstance().log(Level.INFO, "Properties: {0}", JpaUtil.class, props);
-
-                props = metaData.getProperties(persistenceUnit);
-
-                url = new URI(persistenceURI).toURL();
-
-            }catch(IOException e) {
-
-                XLogger.getInstance().log(Level.WARNING, "Exception loading properties for unit: "+persistenceUnit, JpaUtil.class, e);
-                
-            }catch(URISyntaxException e) {
-                
-                XLogger.getInstance().log(Level.WARNING, "Exception creating URI from: "+persistenceURI, JpaUtil.class, e);
-            }
-            
-            final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-            
-            try{
-                
-                if(url != null) {
-                    
-                    final ClassLoader alternativeClassLoader = new AlternativePersistenceClassLoader(url);
-
-                    Thread.currentThread().setContextClassLoader(alternativeClassLoader);
-                }
-                
-                if(props != null && !props.isEmpty()) {
-                    factory = Persistence.createEntityManagerFactory(
-                            persistenceUnit, props);
-                }else{
-                    factory = Persistence.createEntityManagerFactory(
-                            persistenceUnit);
-                }
-            }finally{
-                
-                Thread.currentThread().setContextClassLoader(originalClassLoader);
-            }
-
-            entityManagerFactories.put(persistenceUnit, factory);
-        }
-
-        return factory;
-    }
-
-    public static Object getReference(
-            EntityManager em, Class referencingType, Map<JoinColumn, Field> joinCols, String col, Object val) {
-        
-        if(val == null) {
-            return null;
-        }
-
-        if(joinCols == null) {
-            return null;
-        }
-        
-        JoinColumn joinCol = null;
-        Class refType = null;
-        for(Map.Entry<JoinColumn, Field> entry:joinCols.entrySet()) {
-            if(entry.getKey().name().equals(col)) {
-                joinCol = entry.getKey();
-                refType = entry.getValue().getType();
-                break;
-            }
-        }
-        
-XLogger.getInstance().log(Level.FINER, "Entity type: {0}, column: {1}, reference type: {2}", 
-JpaUtil.class, referencingType, col, refType);        
-        
-        if(refType == null) {
-            return null;
-        }
-        
-        if(refType.equals(val.getClass())) {
-XLogger.getInstance().log(Level.FINER, "No need to convert: {0} to type: {1}", JpaUtil.class, val, refType);        
-            return null;
-        }
-        
-        String crossRefColumn = joinCol.referencedColumnName();
-
-XLogger.getInstance().log(Level.FINER, "Reference type: {0}, Referencing type: {1}, reference column: {2}", 
-        JpaUtil.class, refType, referencingType, crossRefColumn);        
-        
-        Object ref;
-        
-        if(crossRefColumn != null) {
-
-XLogger.getInstance().log(Level.FINER, "Reference type: {0}, Raw type: {1}, raw: {2}", JpaUtil.class, refType, val.getClass(), val);        
-            
-            ref = em.getReference(refType, val);
-            
-XLogger.getInstance().log(Level.FINER, "Raw type: {0}, raw: {1}, Reference type: {2}, reference: {3}", 
-JpaUtil.class, val.getClass(), val, refType, ref);        
-            
-            if(ref == null) {
-                throw new NullPointerException("Reference cannot be null for: "+
-                        refType.getName()+" of entity: "+referencingType.getName()+
-                        ", column: "+col+", value: "+val);
-            }
-
-        }else{
-
-            ref = null;
-        }
-        
-        return ref;
-    }
-    
     public static Method getMethod(boolean setter, 
     Class referenceEntityClass, Class referencingEntityClass) {
         

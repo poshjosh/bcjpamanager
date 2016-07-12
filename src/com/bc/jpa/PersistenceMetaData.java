@@ -2,6 +2,7 @@ package com.bc.jpa;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.Map;
 import java.util.Properties;
 import javax.persistence.JoinColumn;
@@ -22,9 +23,9 @@ import javax.persistence.TemporalType;
 public interface PersistenceMetaData {
 
     /**
-     * @return The URI containing the persistence.xml data
+     * @return The URI to the persistence.xml data
      */
-    String getURI();
+    URI getURI();
     
     /**
      * 

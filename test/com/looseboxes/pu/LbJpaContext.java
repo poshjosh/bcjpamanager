@@ -1,8 +1,7 @@
 package com.looseboxes.pu;
 
 import com.bc.jpa.JpaContextImpl;
-import com.bc.jpa.PersistenceLoader;
-import com.bc.jpa.PersistenceMetaData;
+import com.bc.jpa.util.PersistenceURISelector;
 import com.bc.sql.MySQLDateTimePatterns;
 import com.bc.sql.SQLDateTimePatterns;
 import java.io.File;
@@ -23,7 +22,7 @@ import java.net.URI;
  */
 public class LbJpaContext extends JpaContextImpl {
 
-    private static class PersistenceUriFilter implements PersistenceLoader.URIFilter {
+    private static class PersistenceUriFilter implements PersistenceURISelector.URIFilter {
         @Override
         public boolean accept(URI uri) {
             return uri.toString().contains("looseboxes");
@@ -42,7 +41,7 @@ public class LbJpaContext extends JpaContextImpl {
         super(persistenceFile, new PersistenceUriFilter(), dateTimePatterns, References.ENUM_TYPES);
     }
     
-//    public LbJpaContext(String persistenceFile, PersistenceLoader.URIFilter uriFilter, SQLDateTimePatterns dateTimePatterns, ParametersFormatter paramFmt) throws IOException {
+//    public LbJpaContext(String persistenceFile, PersistenceURISelector.URIFilter uriFilter, SQLDateTimePatterns dateTimePatterns, ParametersFormatter paramFmt) throws IOException {
 //        super(persistenceFile, uriFilter, dateTimePatterns, paramFmt, References.ENUM_TYPES);
 //    }
 
@@ -56,9 +55,5 @@ public class LbJpaContext extends JpaContextImpl {
 
     public LbJpaContext(File persistenceFile, SQLDateTimePatterns dateTimePatterns) throws IOException {
         super(persistenceFile, dateTimePatterns, References.ENUM_TYPES);
-    }
-
-    public LbJpaContext(PersistenceMetaData metaData, SQLDateTimePatterns dateTimePatterns) {
-        super(metaData, dateTimePatterns, References.ENUM_TYPES);
     }
 }

@@ -102,6 +102,11 @@ public interface EntityControllerBase<E, e> {
     @Deprecated
     void setDatabaseName(String databaseName);
 
+    /**
+     * @param aClass
+     * @deprecated
+     */
+    @Deprecated
     void setEntityClass(Class<E> aClass);
     
     /**
@@ -114,6 +119,11 @@ public interface EntityControllerBase<E, e> {
      */
     void setId(E entity, e id);
     
+    /**
+     * @param tableName
+     * @deprecated
+     */
+    @Deprecated
     void setTableName(String tableName);
 
     /**

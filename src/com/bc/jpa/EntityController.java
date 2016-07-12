@@ -29,8 +29,6 @@ public interface EntityController<E, e> extends EntityControllerBase<E, e> {
     
     JPQL getJpql();
 
-    void setJpql(JPQL jpql);
-    
     Object getResultType();
 
     void setResultType(Object resultType);
@@ -126,8 +124,6 @@ public interface EntityController<E, e> extends EntityControllerBase<E, e> {
      * Or if you want to retrieve only one column
      */
     List toList(List<E> results, String column, int limit);
-    
-    List toList(E entity);
     
     Map toMap(E entity);
 

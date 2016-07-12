@@ -36,24 +36,20 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
     
     private Class entityClass;
     
-    private PersistenceMetaData metaData;
-    
-    public BaseEntityController() { }
+    private final JpaContext jpaContext;
     
     public BaseEntityController(
-            PersistenceMetaData puMeta, 
+            JpaContext ctx, 
             Class<E> entityClass) {
     
-        this.metaData = puMeta;
+        this.jpaContext = ctx;
         
         this.entityClass = entityClass;
     }
 
     @Override
     public EntityManagerFactory getEntityManagerFactory() {
-        return JpaUtil.getEntityManagerFactory(
-                this.metaData,
-                this.metaData.getDatabaseName(entityClass));
+        return this.jpaContext.getEntityManagerFactory(entityClass);
     }
 
     @Override
@@ -62,6 +58,7 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
     }
     
     /**
+     * Simply throws UnsupportedOperationException
      * @deprecated 
      */
     @Override
@@ -70,6 +67,7 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
     }
 
     /**
+     * Simply throws UnsupportedOperationException
      * @deprecated 
      */
     @Override
@@ -421,7 +419,7 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
     @Override
     public e getId(E entity) 
             throws IllegalArgumentException, UnsupportedOperationException {
-        return (e)this.getValue(entity, this.metaData.getIdColumnName(this.entityClass));
+        return (e)this.getValue(entity, this.getMetaData().getIdColumnName(this.entityClass));
     }
 
     /**
@@ -492,7 +490,7 @@ this.getClass(), entity, columnName, (method==null?null:method.getName()));
     public void setId(E entity, e id) 
             throws IllegalArgumentException, UnsupportedOperationException {
         
-        this.setValue(entity, this.metaData.getIdColumnName(this.entityClass), id);
+        this.setValue(entity, this.getMetaData().getIdColumnName(this.entityClass), id);
     }
 
     /**
@@ -582,25 +580,26 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
 
     @Override
     public String getDatabaseName() {
-        return this.metaData.getDatabaseName(this.entityClass);
+        return this.getMetaData().getDatabaseName(this.entityClass);
     }
 
     @Override
     public String getTableName() {
-        return this.metaData.getTableName(this.entityClass);
+        return this.getMetaData().getTableName(this.entityClass);
     }
     
     @Override
     public void setTableName(String tableName) {
-        String databaseName = this.metaData.getDatabaseName(entityClass);
-        Class aClass = this.metaData.getEntityClass(databaseName, tableName);
+        final PersistenceMetaData metaData = this.getMetaData();
+        String databaseName = metaData.getDatabaseName(entityClass);
+        Class aClass = metaData.getEntityClass(databaseName, tableName);
         // Use this method as it performs important logic
         this.setEntityClass(aClass);
     }
 
     @Override
     public String getIdColumnName() {
-        return this.metaData.getIdColumnName(this.entityClass);
+        return this.getMetaData().getIdColumnName(this.entityClass);
     }
     
     @Override
@@ -622,6 +621,8 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
         if(this.entityClass == null || anEntityClass == null) {
             return;
         }
+        
+        final PersistenceMetaData metaData = this.getMetaData();
         
         boolean aIsRef = metaData.getReferencingClasses(entityClass) != null;
         boolean bIsRef = metaData.getReferencingClasses(anEntityClass) != null;
@@ -648,13 +649,13 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
             throw new IllegalArgumentException(msg.toString());
         }
     }
-
-    @Override
-    public PersistenceMetaData getMetaData() {
-        return this.metaData;
+    
+    public final JpaContext getJpaContext() {
+        return this.jpaContext;
     }
 
-    public void setMetaData(PersistenceMetaData entityMetaData) {
-        this.metaData = entityMetaData;
+    @Override
+    public final PersistenceMetaData getMetaData() {
+        return this.jpaContext.getMetaData();
     }
 }

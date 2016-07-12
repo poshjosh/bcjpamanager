@@ -2,7 +2,6 @@ package com.bc.jpa;
 
 import com.bc.jpa.dom.PersistenceDOM;
 import com.bc.util.XLogger;
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -19,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.EntityManager;
@@ -49,11 +47,6 @@ import javax.persistence.TemporalType;
 public class PersistenceMetaDataImpl 
         implements PersistenceMetaData, Serializable {
     
-    private transient static final Logger logger =
-            Logger.getLogger(PersistenceMetaDataImpl.class.getName());
-
-    private String uriStr;
-    
     private List<String> puNames;
     
     private List<String> jdbcUrls;
@@ -70,45 +63,27 @@ public class PersistenceMetaDataImpl
     private List<List<String>> idFieldNames;
     
     private List<List<String>> idColumnNames;
+    
+    private transient final JpaContext jpaContext;
 
-    public PersistenceMetaDataImpl() { }
-    
-    public PersistenceMetaDataImpl(File file) throws IOException { 
-        PersistenceMetaDataImpl.this.load(file);
-    }
-    
-    public PersistenceMetaDataImpl(URI uri) throws IOException { 
-        PersistenceMetaDataImpl.this.load(uri);
-    }
-    
-    public void load(File file) throws IOException {
-long mb4 = Runtime.getRuntime().freeMemory();
-long tb4 = System.currentTimeMillis();
-        PersistenceDOM pudom = new PersistenceDOM(file); 
-        load(pudom);
-if(logger.isLoggable(Level.FINER))        
-logger.log(Level.FINER, "Loaded {0}, Used time: {1}, memory: {2}", 
-new Object[]{this.getClass().getName(), (System.currentTimeMillis()-tb4), (mb4-Runtime.getRuntime().freeMemory())});        
-    }
-    
-    public void load(URI uri) throws IOException {
-long mb4 = Runtime.getRuntime().freeMemory();
-long tb4 = System.currentTimeMillis();
-        PersistenceDOM pudom = new PersistenceDOM(uri);
-        load(pudom);
-if(logger.isLoggable(Level.FINER))        
-logger.log(Level.FINER, "Loaded {0}, Used time: {1}, memory: {2}", 
-new Object[]{this.getClass().getName(), (System.currentTimeMillis()-tb4), (mb4-Runtime.getRuntime().freeMemory())});        
-    }
-    
-    public void load(PersistenceDOM pudom) throws IOException {
-
-        this.uriStr = pudom.getDocument().getDocumentURI();
-
-        if(this.uriStr == null) {
-            throw new NullPointerException();
-        }
+    public PersistenceMetaDataImpl(JpaContext jpaContext) throws IOException { 
         
+XLogger logger = XLogger.getInstance();
+Level level = Level.FINE;
+Class cls = this.getClass();
+
+        this.jpaContext = jpaContext;
+        
+long mb4 = Runtime.getRuntime().freeMemory();
+long tb4 = System.currentTimeMillis();
+
+        PersistenceDOM pudom = new PersistenceDOM(jpaContext.getPersistenceConfigURI());
+
+if(logger.isLoggable(level, cls)) {        
+    logger.log(level, "Loaded {0}, Used time: {1}, memory: {2}", cls, 
+    PersistenceDOM.class.getName(), (System.currentTimeMillis()-tb4), (mb4-Runtime.getRuntime().freeMemory()));        
+}
+
         this.puNames = pudom.getPersistenceUnitNames();
         
         this.jdbcUrls = new ArrayList<>(this.puNames.size());
@@ -139,14 +114,15 @@ new Object[]{this.getClass().getName(), (System.currentTimeMillis()-tb4), (mb4-R
             this.classes.add(puClasses);
         }
 
-if(Logger.getLogger(this.getClass().getName()).isLoggable(Level.FINE))        
-for(int i=0; i<puNames.size(); i++) {        
-Logger.getLogger(this.getClass().getName()).log(Level.FINE, 
-"Persistence unit: {0}, jdbc url: {1}\nclasses: {2}\nidFieldNames: {3}\nidColumnNames: {4}",
-new Object[]{puNames.get(i), jdbcUrls.get(i), classes.get(i), 
-    idFieldNames==null?null:idFieldNames.get(i), 
-    idColumnNames==null?null:idColumnNames.get(i)});        
-}        
+if(logger.isLoggable(level, cls)) {        
+    for(int i=0; i<puNames.size(); i++) {        
+    logger.log(level, 
+    "Persistence unit: "+puNames.get(i)+", jdbc url: {0}\nclasses: {1}\nidFieldNames: {2}\nidColumnNames: {3}",
+    cls, jdbcUrls.get(i), classes.get(i), 
+        idFieldNames==null?null:idFieldNames.get(i), 
+        idColumnNames==null?null:idColumnNames.get(i));        
+    } 
+}
         // This must come last
         //
 //        for(List<Class> puClasses:this.classes) {
@@ -182,18 +158,14 @@ new Object[]{puNames.get(i), jdbcUrls.get(i), classes.get(i),
     }
 
     @Override
-    public String getURI() {
-        return uriStr;
+    public URI getURI() {
+        return this.jpaContext.getPersistenceConfigURI();
     }
     
     @Override
     public Properties getProperties(String persistenceUnitName) throws IOException {
-        try{
-            PersistenceDOM pudom = new PersistenceDOM(new URI(this.uriStr));
-            return pudom.getProperties(persistenceUnitName);
-        }catch(java.net.URISyntaxException shouldNotHappen) {
-            throw new IOException(shouldNotHappen);
-        }
+        PersistenceDOM pudom = new PersistenceDOM(this.jpaContext.getPersistenceConfigURI());
+        return pudom.getProperties(persistenceUnitName);
     }
     
     @Override
@@ -904,9 +876,7 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
         
         final int [] output = new int[columnNames.length];
         
-        final String databaseName = this.getDatabaseName(entityClass);
-        
-        EntityManagerFactory factory = JpaUtil.getEntityManagerFactory(this, databaseName);
+        EntityManagerFactory factory = jpaContext.getEntityManagerFactory(entityClass);
         
         EntityManager entityManager = factory.createEntityManager();
         
@@ -918,6 +888,8 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
 
             final DatabaseMetaData dbMetaData = connection.getMetaData();
 
+            final String databaseName = this.getDatabaseName(entityClass);
+        
             final String tableName = this.getTableName(entityClass);
             
             ResultSet dbColumns = dbMetaData.getColumns(null, databaseName, tableName, null);

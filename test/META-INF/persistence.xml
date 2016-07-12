@@ -31,7 +31,6 @@
       <property name="eclipselink.jdbc.batch-writing.size" value="1000"/>      
       <!--property name="eclipselink.logging.level.sql" value="FINE"/-->
       <!--property name="eclipselink.logging.parameters" value="true"/-->
-      <!--property name="eclipselink.persistencexml" value="META-INF/persistence_remote.xml"/-->      
     </properties>
   </persistence-unit>
   <persistence-unit name="looseboxespu" transaction-type="RESOURCE_LOCAL">
@@ -98,7 +97,6 @@
       <!--property name="eclipselink.jdbc.batch-writing.size" value="1000"/-->      
       <!--property name="eclipselink.logging.level.sql" value="FINE"/-->
       <!--property name="eclipselink.logging.parameters" value="true"/-->
-      <!--property name="eclipselink.persistencexml" value="META-INF/persistence_remote.xml"/-->      
     </properties>
   </persistence-unit>
 </persistence>

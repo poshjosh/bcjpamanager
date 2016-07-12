@@ -4,6 +4,7 @@ import com.bc.jpa.query.JPQLImpl;
 import com.bc.jpa.query.JPQL;
 import com.bc.jpa.exceptions.EntityInstantiationException;
 import com.bc.jpa.exceptions.NonexistentEntityException;
+import com.bc.jpa.util.EntityMapBuilderImpl;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -52,18 +53,14 @@ public class DefaultEntityController<E, e>
     
     private Object resultType;
     
-    private JPQL jpql;
-    
-    public DefaultEntityController() { 
-        this.jpql = new JPQLImpl();
-    }
+    private final JPQL jpql;
     
     public DefaultEntityController(
-            PersistenceMetaData puMeta, Class<E> entityClass) {
+            JpaContext jpaContext, Class<E> entityClass) {
     
-        super(puMeta, entityClass);
+        super(jpaContext, entityClass);
         
-        this.jpql = new JPQLImpl(puMeta, entityClass);
+        this.jpql = new JPQLImpl(jpaContext, entityClass);
     }
     
     @Override
@@ -631,86 +628,14 @@ logger.log(Level.FINER, "Query: {0}", queryBuff);
     @Override
     public void toMap(E entity, Map map, boolean nullsAllowed) {
         
-        if(entity==null) {
-            throw new NullPointerException();
-        }
-
-if(logger.isLoggable(Level.FINER))        
-logger.log(Level.FINER, "Entity class. From controller: {0}, From entity: {1}", 
-        new Object[]{this.getEntityClass(), entity.getClass()});
-        
-        Method [] methods = this.getMethods();
-        StringBuilder buff = new StringBuilder();
-        for(Method method:methods) {
-            buff.setLength(0);
-            JpaUtil.appendColumnName(false, method, buff);
-            String columnName = buff.length() == 0 ? null : buff.toString();
-            if(columnName == null) {
-                continue;
-            }
-            try{
-                Object columnValue = method.invoke(entity);
-                if(!nullsAllowed && columnValue == null) {
-                    continue;
-                }
-                map.put(columnName, columnValue);
-            }catch(IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                StringBuilder msg = new StringBuilder();
-                msg.append("Entity: ").append(entity);
-                msg.append(", Method: ").append(method.getName());
-                msg.append(", Column: ").append(columnName);
-                logger.log(Level.WARNING, msg.toString(), e);
-            }
-        }
-logger.log(Level.FINER, "Extracted: {0}", map.keySet());        
+        new EntityMapBuilderImpl(nullsAllowed, 0, 100, null, null).build(entity, this.getEntityClass(), map);
     }
 
-    @Override
-    public List toList(E entity) {
-        
-        if(entity == null) {
-            throw new NullPointerException();
-        }
-        
-if(logger.isLoggable(Level.FINER))        
-logger.log(Level.FINER, "Entity class. From controller: {0}, From entity: {1}", 
-        new Object[]{this.getEntityClass(), entity.getClass()});
-        
-        Method [] methods = this.getMethods();
-        
-        List output = null;
-        StringBuilder buff = new StringBuilder();
-        for(Method method:methods) {
-            buff.setLength(0);
-            // We have to use this method to check that the columnName is accepted
-            JpaUtil.appendColumnName(false, method, buff);
-            String columnName = buff.length() == 0 ? null : buff.toString();
-            if(columnName == null) {
-                continue;
-            }
-            try{
-                Object columnValue = method.invoke(entity);
-                output = new ArrayList(methods.length);
-                output.add(columnValue);
-            }catch(IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                StringBuilder msg = new StringBuilder();
-                msg.append("Entity: ").append(entity);
-                msg.append(", Method: ").append(method.getName());
-                msg.append(", Column: ").append(columnName);
-                logger.log(Level.WARNING, msg.toString(), e);
-                
-            }
-        }
-logger.log(Level.FINER, "Extracted: {0}", output==null?null:output.size());        
-        return output;
-    }
-    
-    /**
-     * @return The number of fields that were successfully updated
-     */
     @Override
     public int updateEntity(E entity, Map row, boolean convertCrossReferences) 
             throws EntityInstantiationException {
+        
+        final Class entityType = this.getEntityClass();
         
         int updateCount = 0;
 
@@ -721,16 +646,18 @@ logger.log(Level.FINER, "Updating entity: {0} with values {1}", new Object[]{ent
             
             Map<JoinColumn, Field> joinColumns;
             if(convertCrossReferences && !row.isEmpty()) {
-                joinColumns = this.getMetaData().getJoinColumns(this.getEntityClass());
+                joinColumns = this.getMetaData().getJoinColumns(entityType);
             }else{
                 joinColumns = null;
             }
+            
+            final EntityManager em = this.getEntityManager();
             
             for(Entry entry:(Set<Entry>)row.entrySet()) {
                 String col = entry.getKey().toString();
                 Object val = entry.getValue();
                 if(convertCrossReferences && (joinColumns != null && !joinColumns.isEmpty())) {
-                    Object ref = JpaUtil.getReference(this.getEntityManager(), this.getEntityClass(), joinColumns, col, val);
+                    Object ref = this.getJpaContext().getReference(em, entityType, joinColumns, col, val);
                     if(ref != null) {
                         val = ref;
                     }
@@ -784,7 +711,7 @@ logger.log(Level.FINER, "Updating entity: {0} with values {1}", new Object[]{ent
      *  3      | guest
      * ----------------
      * </pre>
-     * <br/>And given the referencing table named <tt>userroles</tt> with definition below:
+     * <p>And given the referencing table named <tt>userroles</tt> with definition below:</p>
      * <pre>
      * create table userroles(
      *   userroleid INTEGER(8) AUTO_INCREMENT not null primary key,
@@ -793,28 +720,19 @@ logger.log(Level.FINER, "Updating entity: {0} with values {1}", new Object[]{ent
      *   FOREIGN KEY (role) REFERENCES role(roleid)
      * )ENGINE=INNODB;
      * </pre>
+     * <p>
      * Calling this method with arguments <tt>role</tt> and <tt>2</tt> respectively 
      * will return the <tt>Role</tt> entity with the specified id.
-     * <br/><br/>
+     * </p>
      * The method returns null if the arguments have no matching reference.
+     * @param col
+     * @param val
+     * @return 
      */
     @Override
     public Object getReference(String col, Object val) {
         
-        Class referencingClass = this.getEntityClass();
-        
-        Map<JoinColumn, Field> joinColumns = this.getMetaData().getJoinColumns(referencingClass);
-        
-        EntityManager em = this.getEntityManager();
-        
-        Object ref;
-        if(joinColumns == null) {
-            ref = null;
-        }else{
-            ref = JpaUtil.getReference(em, referencingClass, joinColumns, col, val);
-        }
-        
-        return ref;
+        return this.getJpaContext().getReference(this.getEntityClass(), col, val);
     }
     
     private E newEntity() throws EntityInstantiationException {
@@ -885,8 +803,8 @@ logger.log(Level.FINER, "Updating entity: {0} with values {1}", new Object[]{ent
                         row[0] = oval;
                     }
                 }else {
-                    List list = this.toList((E)oval);
-                    row = list.toArray();
+                    Map map = this.toMap((E)oval, true);
+                    row = new ArrayList(map.values()).toArray(new Object[0]);
                 }
                 output.add(row);
             }
@@ -908,20 +826,9 @@ logger.log(Level.FINER, "Updating entity: {0} with values {1}", new Object[]{ent
     }
 
     @Override
-    public void setJpql(JPQL jpql) {
-        this.jpql = jpql;
-    }
-
-    @Override
     public void setEntityClass(Class<E> aClass) {
         super.setEntityClass(aClass);
         jpql.setEntityClass(aClass);
-    }
-    
-    @Override
-    public void setMetaData(PersistenceMetaData entityMetaData) {
-        super.setMetaData(entityMetaData);
-        jpql.setMetaData(entityMetaData);
     }
     
     @Override

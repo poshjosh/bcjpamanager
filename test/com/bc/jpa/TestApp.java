@@ -24,11 +24,11 @@ System.out.println(TestApp.class.getName()+"<init>");
 
         try{
             
-            String filename = System.getProperty("user.home") + "/Documents/NetBeansProjects/looseboxespu/src/META-INF/persistence.xml";
+            String filename = System.getProperty("user.home") + "/Documents/NetBeansProjects/looseboxespu/test/META-INF/persistence.xml";
             
             lbJpaContext = this.loadJpaContext(filename, com.looseboxes.pu.References.ENUM_TYPES);
-            
-            filename = System.getProperty("user.home") + "/Documents/NetBeansProjects/idiscpu/src/META-INF/persistence_remote.xml";
+
+            filename = System.getProperty("user.home") + "/Documents/NetBeansProjects/idiscpu/test/META-INF/persistence.xml";
             
             idiscJpaContext = this.loadJpaContext(filename, com.idisc.pu.References.ENUM_TYPES);
             
@@ -46,7 +46,8 @@ System.out.println(TestApp.class.getName()+"<init>");
                 throw new FileNotFoundException(filename);
             }
             
-            final JpaContext jpaContext = new com.bc.jpa.JpaContextImpl(persistenceFile, new MySQLDateTimePatterns(), enumRefClasses);
+            final JpaContext jpaContext = new JpaContextImpl(
+                    persistenceFile, new MySQLDateTimePatterns(), enumRefClasses);
             
             PersistenceMetaData metaData = jpaContext.getMetaData();
             String [] puNames = metaData.getPersistenceUnitNames();

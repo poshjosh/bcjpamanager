@@ -105,7 +105,5 @@ public interface JPQL<E> {
     
     void setEntityClass(Class<E> entityClass);
 
-    void setMetaData(PersistenceMetaData metaData);
-
     void setSearchNulls(boolean searchNulls);
 }

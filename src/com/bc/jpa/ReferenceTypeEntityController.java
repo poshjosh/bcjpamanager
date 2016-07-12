@@ -23,13 +23,9 @@ public abstract class ReferenceTypeEntityController<E, e, X, Y>
         extends DefaultEntityController<E, e>
         implements EntityController<E, e> {
     
-    public ReferenceTypeEntityController() { }
+    public ReferenceTypeEntityController(JpaContext jpaContext, Class<E> entityClass) {
     
-    public ReferenceTypeEntityController(
-            PersistenceMetaData puMeta, 
-            Class<E> entityClass) {
-    
-        super(puMeta, entityClass);
+        super(jpaContext, entityClass);
     }
     
     @Override

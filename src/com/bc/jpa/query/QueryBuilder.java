@@ -18,11 +18,16 @@ public interface QueryBuilder<T> extends AutoCloseable {
     public static enum Connector{AND, OR};
     
     ComparisonOperator EQUALS = ComparisonOperator.EQUALS;
+    ComparisonOperator EQ = ComparisonOperator.EQUALS;
     ComparisonOperator LIKE = ComparisonOperator.LIKE;
     ComparisonOperator GREATER_THAN = ComparisonOperator.GREATER_THAN;
+    ComparisonOperator GT = ComparisonOperator.GREATER_THAN;
     ComparisonOperator GREATER_OR_EQUALS = ComparisonOperator.GREATER_OR_EQUALS;
+    ComparisonOperator GTE = ComparisonOperator.GREATER_OR_EQUALS;
     ComparisonOperator LESS_THAN = ComparisonOperator.LESS_THAN;
+    ComparisonOperator LT = ComparisonOperator.LESS_THAN;
     ComparisonOperator LESS_OR_EQUALS = ComparisonOperator.LESS_OR_EQUALS;
+    ComparisonOperator LTE = ComparisonOperator.LESS_OR_EQUALS;
     Connector AND = Connector.AND;
     Connector OR = Connector.OR;
     
@@ -88,7 +93,15 @@ public interface QueryBuilder<T> extends AutoCloseable {
     
     QueryBuilder<T> where(Class entityType, String key, 
             ComparisonOperator comparisonOperator, Object val);
+
+    QueryBuilder where(String [] cols, 
+            QueryBuilder.ComparisonOperator comparisonOperator, 
+            Object val, QueryBuilder.Connector connector);
     
+    QueryBuilder where(Class entityType, String [] cols, 
+            QueryBuilder.ComparisonOperator comparisonOperator, 
+            Object val, QueryBuilder.Connector connector);
+
     QueryBuilder<T> where(String key, 
             ComparisonOperator comparisonOperator, Object val, Connector connector);
     

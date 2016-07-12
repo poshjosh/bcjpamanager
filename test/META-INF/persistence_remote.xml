@@ -29,7 +29,7 @@
       <property name="eclipselink.jdbc.cache-statements" value="true"/>
       <property name="eclipselink.jdbc.batch-writing" value="JDBC"/> 
       <property name="eclipselink.jdbc.batch-writing.size" value="1000"/>      
-      <!--property name="eclipselink.logging.level.sql" value="FINE"/-->
+      <property name="eclipselink.logging.level.sql" value="FINE"/>
       <!--property name="eclipselink.logging.parameters" value="true"/-->
       <!--property name="eclipselink.persistencexml" value="META-INF/persistence_remote.xml"/-->      
     </properties>
@@ -67,7 +67,6 @@
     <class>com.looseboxes.pu.entities.Oauthuser</class>
     <class>com.looseboxes.pu.entities.Supportticket</class>
     <properties>
-      <!--property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/ivyfash_db0?zeroDateTimeBehavior=convertToNull"/-->
       <property name="javax.persistence.jdbc.url" value="jdbc:mysql://europa.ignitionserver.net:3306/ivyfash_db0?zeroDateTimeBehavior=convertToNull"/>
       <property name="javax.persistence.jdbc.user" value="ivyfash_root"/>
       <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
@@ -78,7 +77,7 @@
       <property name="eclipselink.jdbc.cache-statements" value="true"/>
       <property name="eclipselink.jdbc.batch-writing" value="JDBC"/>
       <!--property name="eclipselink.jdbc.batch-writing.size" value="1000"/-->
-      <!--property name="eclipselink.logging.level.sql" value="FINE"/-->
+      <property name="eclipselink.logging.level.sql" value="FINE"/>
       <!--property name="eclipselink.logging.parameters" value="true"/-->
     </properties>
   </persistence-unit>
@@ -97,9 +96,8 @@
       <property name="eclipselink.jdbc.cache-statements" value="true"/>
       <!--property name="eclipselink.jdbc.batch-writing" value="JDBC"/--> 
       <!--property name="eclipselink.jdbc.batch-writing.size" value="1000"/-->      
-      <property name="eclipselink.logging.level.sql" value="FINER"/>
+      <property name="eclipselink.logging.level.sql" value="FINE"/>
       <property name="eclipselink.logging.parameters" value="true"/>
-      <!--property name="eclipselink.persistencexml" value="META-INF/persistence_remote.xml"/-->      
     </properties>
   </persistence-unit>
 </persistence>

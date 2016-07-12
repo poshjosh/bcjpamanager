@@ -307,12 +307,31 @@ XLogger.getInstance().log(Level.FINER, "Accepted: true, Type: {0}, Class: {1}",
     }
 
     @Override
+    public QueryBuilder where(String [] cols, 
+            QueryBuilder.ComparisonOperator comparisonOperator, 
+            Object val, QueryBuilder.Connector connector) {
+        this.throwExceptionIfNullActiveEntityType();
+        return this.where(activeEntityType, cols, comparisonOperator, val, connector);
+    }
+    
+    @Override
+    public QueryBuilder where(Class entityType, String [] cols, 
+            QueryBuilder.ComparisonOperator comparisonOperator, 
+            Object val, QueryBuilder.Connector connector) {
+        this.throwExceptionIfCommited();
+        for(String col:cols) {
+            this.where(entityType, col, comparisonOperator, val, connector);
+        }
+        return this;
+    }
+    
+    @Override
     public QueryBuilder where(String key, 
             QueryBuilder.ComparisonOperator comparisonOperator, Object val, QueryBuilder.Connector connector) {
         this.throwExceptionIfNullActiveEntityType();
         return this.where(activeEntityType, key, comparisonOperator, val, connector);
     }
-    
+
     @Override
     public QueryBuilder where(Class entityType, String key, 
             QueryBuilder.ComparisonOperator comparisonOperator, Object val, QueryBuilder.Connector connector) {

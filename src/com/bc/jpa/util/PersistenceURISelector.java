@@ -1,4 +1,4 @@
-package com.bc.jpa;
+package com.bc.jpa.util;
 
 import com.bc.util.XLogger;
 import java.io.File;
@@ -24,7 +24,7 @@ import java.util.logging.Logger;
  * @version  2.0
  * @since    2.0
  */
-public class PersistenceLoader {
+public class PersistenceURISelector {
     
     private final Set<ClassLoader> classLoaders;
     
@@ -32,27 +32,14 @@ public class PersistenceLoader {
         boolean accept(URI uri);
     }
 
-    public PersistenceLoader() { 
-        this(PersistenceLoader.class.getClassLoader(), Thread.currentThread().getContextClassLoader());
+    public PersistenceURISelector() { 
+        this(Thread.currentThread().getContextClassLoader(), PersistenceURISelector.class.getClassLoader());
     }
     
-    public PersistenceLoader(ClassLoader... loaders) {
+    public PersistenceURISelector(ClassLoader... loaders) {
         this.classLoaders = new HashSet(Arrays.asList(loaders));
     }
     
-    public PersistenceMetaData loadMetaData(String fname, URIFilter filter) throws IOException { 
-        
-        URI uri = this.selectURI(fname, filter);
-        
-        if(uri == null) {
-            throw new NullPointerException();
-        }
-        
-        PersistenceMetaData puMetaData = new PersistenceMetaDataImpl(uri);
-        
-        return puMetaData;
-    }
-
     public URI selectURI(String fname, URIFilter filter) throws IOException { 
      
         URI uri = null;

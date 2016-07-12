@@ -23,11 +23,9 @@ import javax.persistence.EntityNotFoundException;
 public class ReferencingEntityController<K, k, E> 
         extends ReferenceTypeEntityController<K, k, E, K>{
     
-    public ReferencingEntityController(
-            PersistenceMetaData puMeta, 
-            Class referencingClass) {
+    public ReferencingEntityController(JpaContext jpaContext, Class referencingClass) {
     
-        super(puMeta, referencingClass);
+        super(jpaContext, referencingClass);
     }
     
     private String getReferenceIdColumn(Class referenceClass) {
