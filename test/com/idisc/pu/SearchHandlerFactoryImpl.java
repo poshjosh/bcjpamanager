@@ -1,6 +1,5 @@
 package com.idisc.pu;
 
-import com.bc.jpa.query.QueryBuilder;
 import com.bc.jpa.search.BaseSearchResults;
 import com.bc.jpa.search.SearchResults;
 import com.idisc.pu.entities.Comment;
@@ -14,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import com.bc.jpa.JpaContext;
+import com.bc.jpa.dao.BuilderForSelect;
 
 /**
  * @author Josh
@@ -175,13 +175,13 @@ public class SearchHandlerFactoryImpl implements SearchHandlerFactory {
         Integer limit = parameters == null || parameters.get("limit") == null ? 20 : (Integer)parameters.get("limit");
         Date after = parameters == null ? null : (Date)parameters.get("after");
         
-        QueryBuilder queryBuilder = this.createQueryBuilder(entityType, query, after, 0, limit);
+        BuilderForSelect queryBuilder = this.createQueryBuilder(entityType, query, after, 0, limit);
         
         return new BaseSearchResults(queryBuilder, limit, true);
     } 
 
-    protected <E> QueryBuilder<E> createQueryBuilder(Class<E> resultType, String query, Date after, int offset, int limit) {
-        QueryBuilder queryBuilder;
+    protected <E> BuilderForSelect<E> createQueryBuilder(Class<E> resultType, String query, Date after, int offset, int limit) {
+        BuilderForSelect queryBuilder;
         final String dateColumn;
         if(resultType == Feed.class) {
             queryBuilder = new FeedQuery(cf, offset, limit, query);
@@ -190,11 +190,12 @@ public class SearchHandlerFactoryImpl implements SearchHandlerFactory {
             queryBuilder = new CommentQuery(cf, offset, limit, query);
             dateColumn = "datecreated";
         }else{
-            queryBuilder = new Query(cf, resultType, offset, limit, query);
+            queryBuilder = new SearchQueryBuilder(cf, resultType, offset, limit, query);
             dateColumn = null;
         }
+        
         if(after != null && dateColumn != null) {
-            queryBuilder.where(resultType, dateColumn, QueryBuilder.GREATER_THAN, after);
+            queryBuilder.where(resultType, dateColumn, BuilderForSelect.GREATER_THAN, after);
         }
         return queryBuilder;
     }

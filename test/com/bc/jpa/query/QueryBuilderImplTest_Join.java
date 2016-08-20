@@ -1,8 +1,9 @@
 package com.bc.jpa.query;
 
+import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.jpa.JpaContext;
 import com.bc.jpa.TestApp;
-import static com.bc.jpa.query.QueryBuilderTestBase.ENTITY_TYPE;
+import static com.bc.jpa.query.TestBaseForJpaQuery.ENTITY_TYPE;
 import com.looseboxes.pu.entities.Orderproduct;
 import com.looseboxes.pu.entities.Product;
 import com.looseboxes.pu.entities.Productorder;
@@ -21,9 +22,9 @@ import org.junit.Test;
 /**
  * @author Josh
  */
-public class QueryBuilderImplTest_2 extends QueryBuilderTestBase {
+public class QueryBuilderImplTest_Join extends TestBaseForJpaQuery {
     
-    public QueryBuilderImplTest_2(String testName) {
+    public QueryBuilderImplTest_Join(String testName) {
         super(testName);
     }
     
@@ -46,12 +47,12 @@ System.out.println("#testJoin_2Modes");
         for(Productvariant variant:variants) {
 
             List<Productorder> orders0;
-            try(QueryBuilder<Productorder> instance = createQueryBuilder(Productorder.class)) {
+            try(BuilderForSelect<Productorder> instance = createSelect(Productorder.class)) {
 
                 TypedQuery<Productorder> tq = instance
                         .join(Productorder.class, joinCol, JoinType.INNER, Orderproduct.class)
                         .where(Orderproduct.class, searchCol, variant)
-                        .build();
+                        .createQuery();
 
                 orders0 = tq.getResultList();
             }

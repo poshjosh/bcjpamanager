@@ -6,7 +6,7 @@ import com.bc.jpa.JpaContext;
 /**
  * @author Josh
  */
-public class CommentQuery extends Query<Comment> {
+public class CommentQuery extends SearchQueryBuilder<Comment> {
     
     public CommentQuery(JpaContext cf, String query) {
         this(cf, -1, -1, query);

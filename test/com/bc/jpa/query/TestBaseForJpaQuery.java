@@ -1,29 +1,39 @@
 package com.bc.jpa.query;
 
+import com.bc.jpa.dao.BuilderForUpdate;
+import com.bc.jpa.dao.BuilderForSelectImpl;
+import com.bc.jpa.dao.BuilderForUpdateImpl;
+import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.jpa.JpaContext;
 import com.bc.jpa.TestApp;
 import com.looseboxes.pu.entities.Product;
 import java.util.Arrays;
 import java.util.List;
+import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import junit.framework.TestCase;
 
 /**
  * @author Josh
  */
-public class QueryBuilderTestBase extends TestCase {
+public class TestBaseForJpaQuery extends TestCase {
 
     public static final Class ENTITY_TYPE = Product.class;
     
-    public JpaContext getJpaContext() {
+    public JpaContext getLbJpaContext() {
         return TestApp.getInstance().getLbJpaContext();
+    }
+
+    
+    public JpaContext getIdiscJpaContext() {
+        return TestApp.getInstance().getIdiscJpaContext();
     }
     
     private static List<Integer> ids;
 
     public static Integer SELECTED_PRODUCTID;
 
-    public QueryBuilderTestBase(String testName) {
+    public TestBaseForJpaQuery(String testName) {
         super(testName);
         if(ids == null) {
             ids = selectLastIds(20);
@@ -35,15 +45,15 @@ public class QueryBuilderTestBase extends TestCase {
         
 System.out.println(this.getClass().getName()+"#selectRange("+start+", "+end+")");
 
-        try(QueryBuilder instance = createQueryBuilder(ENTITY_TYPE)) {
+        try(BuilderForSelect<Product> instance = createSelect(ENTITY_TYPE)) {
         
             final String COLUMN = "productid";
 
-            TypedQuery<Product> tq = instance.forType(ENTITY_TYPE)
-                    .where(COLUMN, QueryBuilder.GREATER_OR_EQUALS, start, QueryBuilder.AND)
-                    .where(COLUMN, QueryBuilder.LESS_THAN, end)        
+            TypedQuery<Product> tq = instance.from(ENTITY_TYPE)
+                    .where(COLUMN, BuilderForSelect.GREATER_OR_EQUALS, start, BuilderForSelect.AND)
+                    .where(COLUMN, BuilderForSelect.LESS_THAN, end)        
                     .descOrder(COLUMN)
-                    .build();
+                    .createQuery();
 
             List<Product> results = tq.getResultList();
 
@@ -53,12 +63,12 @@ System.out.println(this.getClass().getName()+"#selectRange("+start+", "+end+")")
     
     public List<Integer> selectLastIds(int n) {
         
-        try(QueryBuilder<Integer> instance = createQueryBuilder(Integer.class)) {
+        try(BuilderForSelect<Integer> instance = createSelect(Integer.class)) {
         
             TypedQuery<Integer> tq = instance
-                    .forType(Product.class)
+                    .from(Product.class)
                     .select("productid")
-                    .descOrder("productid").build();
+                    .descOrder("productid").createQuery();
 
             tq.setFirstResult(0);
             tq.setMaxResults(n);
@@ -70,6 +80,7 @@ System.out.println(this.getClass().getName()+"#selectRange("+start+", "+end+")")
     }
     
     public void printResults(List results, boolean deep) {
+        
         System.out.println("Found: "+(results==null?null:results.size())+" results");
         if(deep) {
             for(Object result:results) {
@@ -82,16 +93,32 @@ System.out.println(result);
         }
     }
     
-    public <R> QueryBuilder<R> createQueryBuilder(Class<R> resultType) {
-        return new QueryBuilderImpl(this.getJpaContext().getEntityManager(ENTITY_TYPE), resultType){
+    public <R> BuilderForSelect<R> createSelect(Class<R> resultType) {
+        
+        return new BuilderForSelectImpl<R>(this.getLbJpaContext().getEntityManager(ENTITY_TYPE), resultType, this.getLbJpaContext().getDatabaseFormat()){
             @Override
-            public TypedQuery<R> build() {
+            public TypedQuery<R> createQuery() {
 
-//String output = String.format("#build()\n%s", this);
+//String output = String.format("#createQuery()\n%s", this);
 
 //System.out.println(this.getClass().getSimpleName() + output);
 
-                return super.build();
+                return super.createQuery();
+            }
+        };
+    }
+
+    public BuilderForUpdate<Product> createUpdate() {
+        
+        return new BuilderForUpdateImpl(this.getLbJpaContext().getEntityManager(ENTITY_TYPE), ENTITY_TYPE, this.getLbJpaContext().getDatabaseFormat()){
+            @Override
+            public Query createQuery() {
+
+//String output = String.format("#createQuery()\n%s", this);
+
+//System.out.println(this.getClass().getSimpleName() + output);
+
+                return super.createQuery();
             }
         };
     }

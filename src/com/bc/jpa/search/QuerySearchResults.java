@@ -4,7 +4,8 @@ import java.io.Serializable;
 import java.util.List;
 import javax.persistence.TypedQuery;
 import com.bc.jpa.paging.PaginatedList;
-import com.bc.jpa.paging.SimplePagingList;
+import com.bc.jpa.paging.PaginatedListImpl;
+import com.bc.jpa.paging.QueryResultPages;
 
 /**
  * @(#)AbstractSearchResults.java   11-Apr-2015 08:28:48
@@ -35,13 +36,13 @@ import com.bc.jpa.paging.SimplePagingList;
  * @since    2.0
  */
 public class QuerySearchResults<T> 
-        extends SimplePagingList<T>
-        implements Serializable, SearchResultList<T> {
+        extends QueryResultPages<T>
+        implements Serializable, SearchResults<T> {
 
     private int pageNumber;
     
     private final boolean useCache;
-    
+
     public QuerySearchResults(TypedQuery typedQuery) { 
         super(typedQuery);
         this.useCache = true;
@@ -74,50 +75,33 @@ public class QuerySearchResults<T>
 
     @Override
     public PaginatedList<T> getAllResults() {
-        return this;
+        return new PaginatedListImpl(this);
     }
     
-    @Override
-    public int getSize() {
-        return this.size();
-    }
-
     @Override
     public final boolean isUseCache() {
         return this.useCache;
     }
 
     @Override
-    public List<T> getBatch() {
-        return getCurrentBatch();
-    }
-    
-    @Override
-    public List<T> getCurrentBatch() {
-        return getBatch(pageNumber);
-    }
-
     public List<T> getPage() {
         return getCurrentPage();
     }
     
-    public List<T> getCurrentPage() {
-        return getBatch(pageNumber);
-    }
-    
-    public List<T> getPage(int pageNumber) {
-        return this.getBatch(pageNumber);
-    }
-    
     @Override
-    public int getBatchIndex() {
+    public List<T> getCurrentPage() {
+        return getPage(pageNumber);
+    }
+
+    @Override
+    public int getPageNumber() {
         return pageNumber;
     }
 
     @Override
-    public void setBatchIndex(int pageNumber) {
-        if(pageNumber > this.getBatchCount()-1) {
-            throw new ArrayIndexOutOfBoundsException(pageNumber+" > "+this.getBatchCount());
+    public void setPageNumber(int pageNumber) {
+        if(pageNumber > this.getPageCount()-1) {
+            throw new ArrayIndexOutOfBoundsException(pageNumber+" > "+this.getPageCount());
         }
         this.pageNumber = pageNumber;
     }

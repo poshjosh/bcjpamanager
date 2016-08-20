@@ -66,7 +66,7 @@ public class PersistenceMetaDataImpl
     
     private transient final JpaContext jpaContext;
 
-    public PersistenceMetaDataImpl(JpaContext jpaContext) throws IOException { 
+    public PersistenceMetaDataImpl(JpaContext jpaContext) { 
         
 XLogger logger = XLogger.getInstance();
 Level level = Level.FINE;

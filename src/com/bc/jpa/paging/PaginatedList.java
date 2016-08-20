@@ -29,22 +29,26 @@ public interface PaginatedList<T> extends List<T>, Paginated<T> {
             throw new IndexOutOfBoundsException("index <= size");
         }
         @Override
+        public int getSize() {
+            return this.size();
+        }
+        @Override
         public int size() {
             return 0;
         }
         @Override
         public void reset() { }
         @Override
-        public List getBatch(int pageNum) {
-            return Paginated.EMPTY_PAGES.getBatch(pageNum);
+        public List getPage(int pageNum) {
+            return Paginated.EMPTY_PAGES.getPage(pageNum);
         }
         @Override
-        public int getBatchCount() {
-            return Paginated.EMPTY_PAGES.getBatchCount();
+        public int getPageCount() {
+            return Paginated.EMPTY_PAGES.getPageCount();
         }
         @Override
-        public int getBatchSize() {
-            return Paginated.EMPTY_PAGES.getBatchSize();
+        public int getPageSize() {
+            return Paginated.EMPTY_PAGES.getPageSize();
         }
     }
 }

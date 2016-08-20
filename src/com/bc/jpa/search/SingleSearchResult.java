@@ -35,22 +35,27 @@ public class SingleSearchResult<T> implements SearchResults<T> {
     public void close() { }
 
     @Override
+    public T get(int index) {
+        return results.get(index);
+    }
+
+    @Override
     public PaginatedList<T> getAllResults() {
         return new ListPager(this.results, this.results.size());
     }
 
     @Override
-    public List getCurrentBatch() {
-        return this.getBatch();
+    public List getCurrentPage() {
+        return this.getPage();
     }
 
     @Override
-    public List getBatch() {
-        return this.getBatch(this.getBatchIndex());
+    public List getPage() {
+        return this.getPage(this.getPageNumber());
     }
 
     @Override
-    public int getBatchIndex() {
+    public int getPageNumber() {
         return 0;
     }
 
@@ -60,14 +65,14 @@ public class SingleSearchResult<T> implements SearchResults<T> {
     }
 
     @Override
-    public void setBatchIndex(int pageNumber) {
+    public void setPageNumber(int pageNumber) {
         if(pageNumber != 0) {
             throw new IndexOutOfBoundsException("Only one page of elements available. Index out of bounds. Page: "+pageNumber);
         }
     }
 
     @Override
-    public List getBatch(int pageNum) {
+    public List getPage(int pageNum) {
         if(pageNum != 0) {
             throw new IndexOutOfBoundsException("Only one element in collection. Index out of bounds. Index: "+pageNum);
         }else{
@@ -76,12 +81,12 @@ public class SingleSearchResult<T> implements SearchResults<T> {
     }
 
     @Override
-    public int getBatchCount() {
+    public int getPageCount() {
         return results == null ? 0 : 1;
     }
 
     @Override
-    public int getBatchSize() {
+    public int getPageSize() {
         return 20;
     }
 }

@@ -1,3 +1,9 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
 package com.idisc.pu.entities;
 
 import java.io.Serializable;
@@ -11,112 +17,108 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-
-
-
-
-
-
-
-
-
-
-
+/**
+ * @author Chinomso Bassey Ikwuagwu on Aug 13, 2016 10:53:10 PM
+ */
 @Entity
-@Table(name="favoritefeed")
+@Table(name = "favoritefeed")
 @XmlRootElement
-@NamedQueries({@javax.persistence.NamedQuery(name="Favoritefeed.findAll", query="SELECT f FROM Favoritefeed f"), @javax.persistence.NamedQuery(name="Favoritefeed.findByFavoritefeedid", query="SELECT f FROM Favoritefeed f WHERE f.favoritefeedid = :favoritefeedid"), @javax.persistence.NamedQuery(name="Favoritefeed.findByDatecreated", query="SELECT f FROM Favoritefeed f WHERE f.datecreated = :datecreated")})
-public class Favoritefeed
-  implements Serializable
-{
-  private static final long serialVersionUID = 1L;
-  @Id
-  @GeneratedValue(strategy=GenerationType.IDENTITY)
-  @Basic(optional=false)
-  @Column(name="favoritefeedid")
-  private Integer favoritefeedid;
-  @Basic(optional=false)
-  @Column(name="datecreated")
-  @Temporal(TemporalType.TIMESTAMP)
-  private Date datecreated;
-  @JoinColumn(name="installationid", referencedColumnName="installationid")
-  @ManyToOne(optional=false)
-  private Installation installationid;
-  @JoinColumn(name="feedid", referencedColumnName="feedid")
-  @ManyToOne(optional=false)
-  private Feed feedid;
-  
-  public Favoritefeed() {}
-  
-  public Favoritefeed(Integer favoritefeedid)
-  {
-    this.favoritefeedid = favoritefeedid;
-  }
-  
-  public Favoritefeed(Integer favoritefeedid, Date datecreated) {
-    this.favoritefeedid = favoritefeedid;
-    this.datecreated = datecreated;
-  }
-  
-  public Integer getFavoritefeedid() {
-    return this.favoritefeedid;
-  }
-  
-  public void setFavoritefeedid(Integer favoritefeedid) {
-    this.favoritefeedid = favoritefeedid;
-  }
-  
-  public Date getDatecreated() {
-    return this.datecreated;
-  }
-  
-  public void setDatecreated(Date datecreated) {
-    this.datecreated = datecreated;
-  }
-  
-  public Installation getInstallationid() {
-    return this.installationid;
-  }
-  
-  public void setInstallationid(Installation installationid) {
-    this.installationid = installationid;
-  }
-  
-  public Feed getFeedid() {
-    return this.feedid;
-  }
-  
-  public void setFeedid(Feed feedid) {
-    this.feedid = feedid;
-  }
-  
-  public int hashCode()
-  {
-    int hash = 0;
-    hash += (this.favoritefeedid != null ? this.favoritefeedid.hashCode() : 0);
-    return hash;
-  }
-  
+@NamedQueries({
+    @NamedQuery(name = "Favoritefeed.findAll", query = "SELECT f FROM Favoritefeed f"),
+    @NamedQuery(name = "Favoritefeed.findByFavoritefeedid", query = "SELECT f FROM Favoritefeed f WHERE f.favoritefeedid = :favoritefeedid"),
+    @NamedQuery(name = "Favoritefeed.findByDatecreated", query = "SELECT f FROM Favoritefeed f WHERE f.datecreated = :datecreated")})
+public class Favoritefeed implements Serializable {
 
-  public boolean equals(Object object)
-  {
-    if (!(object instanceof Favoritefeed)) {
-      return false;
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "favoritefeedid")
+    private Integer favoritefeedid;
+    @Basic(optional = false)
+    @Column(name = "datecreated")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date datecreated;
+    @JoinColumn(name = "installationid", referencedColumnName = "installationid")
+    @ManyToOne(optional = false)
+    private Installation installationid;
+    @JoinColumn(name = "feedid", referencedColumnName = "feedid")
+    @ManyToOne(optional = false)
+    private Feed feedid;
+
+    public Favoritefeed() {
     }
-    Favoritefeed other = (Favoritefeed)object;
-    if (((this.favoritefeedid == null) && (other.favoritefeedid != null)) || ((this.favoritefeedid != null) && (!this.favoritefeedid.equals(other.favoritefeedid)))) {
-      return false;
+
+    public Favoritefeed(Integer favoritefeedid) {
+        this.favoritefeedid = favoritefeedid;
     }
-    return true;
-  }
-  
-  public String toString()
-  {
-    return "com.idisc.pu.entities.Favoritefeed[ favoritefeedid=" + this.favoritefeedid + " ]";
-  }
+
+    public Favoritefeed(Integer favoritefeedid, Date datecreated) {
+        this.favoritefeedid = favoritefeedid;
+        this.datecreated = datecreated;
+    }
+
+    public Integer getFavoritefeedid() {
+        return favoritefeedid;
+    }
+
+    public void setFavoritefeedid(Integer favoritefeedid) {
+        this.favoritefeedid = favoritefeedid;
+    }
+
+    public Date getDatecreated() {
+        return datecreated;
+    }
+
+    public void setDatecreated(Date datecreated) {
+        this.datecreated = datecreated;
+    }
+
+    public Installation getInstallationid() {
+        return installationid;
+    }
+
+    public void setInstallationid(Installation installationid) {
+        this.installationid = installationid;
+    }
+
+    public Feed getFeedid() {
+        return feedid;
+    }
+
+    public void setFeedid(Feed feedid) {
+        this.feedid = feedid;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (favoritefeedid != null ? favoritefeedid.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof Favoritefeed)) {
+            return false;
+        }
+        Favoritefeed other = (Favoritefeed) object;
+        if ((this.favoritefeedid == null && other.favoritefeedid != null) || (this.favoritefeedid != null && !this.favoritefeedid.equals(other.favoritefeedid))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.idisc.pu.entities.Favoritefeed[ favoritefeedid=" + favoritefeedid + " ]";
+    }
+
 }

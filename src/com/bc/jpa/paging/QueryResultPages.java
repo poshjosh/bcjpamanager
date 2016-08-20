@@ -14,6 +14,7 @@ package com.bc.jpa.paging;
  ******************************************************************************/
 import com.bc.util.XLogger;
 import java.util.List;
+import java.util.Objects;
 
 import java.util.Set;
 import java.util.logging.Level;
@@ -45,30 +46,17 @@ import org.eclipse.persistence.queries.ReportQuery;
  * @author dclarke
  * @since EclipseLink 2.3.1
  */
-public class SimplePagingList<T> extends AbstractPagingList<T> implements AutoCloseable {
+public class QueryResultPages<T> extends AbstractPages<T> implements AutoCloseable {
 
-    /**
-     * The size determined by {@link #calculateSize(javax.persistence.TypedQuery)}
-     */
-    private int size = -1;
-    
-    private final int batchSize;
-    
     private transient TypedQuery typedQuery;
 
-    public SimplePagingList(TypedQuery<T> typedQuery) {  
+    public QueryResultPages(TypedQuery<T> typedQuery) {  
         this(typedQuery, 20);
     }
     
-    public SimplePagingList(TypedQuery<T> typedQuery, int pageSize) {  
-        this.batchSize = pageSize;
-        this.typedQuery = typedQuery;
-    }
-
-    @Override
-    public void reset() {
-        super.reset(); 
-        this.size = -1;
+    public QueryResultPages(TypedQuery<T> typedQuery, int pageSize) {  
+        super(pageSize);
+        this.typedQuery = Objects.requireNonNull(typedQuery);
     }
     
     @Override
@@ -77,38 +65,8 @@ public class SimplePagingList<T> extends AbstractPagingList<T> implements AutoCl
     }
 
     @Override
-    public final int getBatchSize() {
-        return batchSize;
-    }
-    
-    @Override
-    public int size() {
-        if(this.size == -1) {
-            // This causes size to be initialized
-            this.getBatches();
-        }
-        return this.size;
-    }
-
-    @Override
-    protected List<T> [] initPagesBuffer() {
-        if(typedQuery == null) {
-            throw new NullPointerException();
-        }
-        if(this.getBatchSize() < 1) {
-            throw new UnsupportedOperationException("Page size "+this.getBatchSize()+"< 1");
-        }
-        this.size = calculateSize(typedQuery);
-        
-        //@numPages. null pages == not initialized, 0 pages == initialized but empty
-        //
-        List<T> [] pages = new List[this.computeNumberOfPages(size, batchSize)];
-
-        return pages;
-    }
-    
-    @Override
     protected List<T> loadBatch(int pageNum) {
+        final int batchSize = this.getPageSize();
         typedQuery.setFirstResult(batchSize * pageNum);
         typedQuery.setMaxResults(batchSize);
         return typedQuery.getResultList();
@@ -127,18 +85,18 @@ public class SimplePagingList<T> extends AbstractPagingList<T> implements AutoCl
      * {@link javax.persistence.TypedQuery#setMaxResults(int)}
      * </li>
      * </ul>
-     * @param query
      * @return 
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public final int calculateSize(TypedQuery<T> query) {
+    @Override
+    protected int calculateSize() {
         
-        if(query == null) {
+        if(typedQuery == null) {
             throw new NullPointerException();
         }
         
-        JpaQuery<T> queryImpl = (JpaQuery<T>)query;
-        ReadAllQuery raq = JpaHelper.getReadAllQuery(query);
+        JpaQuery<T> queryImpl = (JpaQuery<T>)typedQuery;
+        ReadAllQuery raq = JpaHelper.getReadAllQuery(typedQuery);
 
         ReportQuery rq;
 
@@ -161,23 +119,23 @@ public class SimplePagingList<T> extends AbstractPagingList<T> implements AutoCl
         try{
 // Temporary solution = Rather than use Query of type: 'SELECT p FROM User p', explicitly name the columns of the entity this way: 'SELECT p.name, p.age, p.height...etc FROM Person p'
             
-//This first line is used int the bug title below... all changes be reflected below            
-//@bug SimplePagingList#calculateSize(TypedQuery) TypedQuery.getParameters throws NullpointerException            
+//This first line is used in the bug title below... all changes be reflected below            
+//@bug QueryResultPages#calculateSize(TypedQuery) TypedQuery.getParameters throws NullpointerException            
 //query.getParameters() often throws the below exception
 //java.lang.NullPointerException
 //	at org.eclipse.persistence.internal.jpa.EJBQueryImpl.getParameters(EJBQueryImpl.java:1442)
-//	at com.loosedb.pu.jpa.SimplePagingList.calculateSize(SimplePagingList.java:149)
-//	at com.loosedb.pu.jpa.SimplePagingList.<init>(SimplePagingList.java:72)
+//	at com.loosedb.pu.jpa.QueryResultPages.calculateSize(QueryResultPages.java:149)
+//	at com.loosedb.pu.jpa.QueryResultPages.<init>(QueryResultPages.java:72)
 //	at com.loosedb.pu.jpa.PagingListTest.testAll(PagingListTest.java:89)
-            if(query.getParameters() != null) {
+            if(typedQuery.getParameters() != null) {
                 
                 // Copy parameters
-                Set<Parameter<?>>  params = query.getParameters();
+                Set<Parameter<?>>  params = typedQuery.getParameters();
                 
 XLogger.getInstance().log(Level.FINER, "Query parameters: {0}", this.getClass(), params);
 
                 for (Parameter param : params) {
-                    countQuery.setParameter(param, query.getParameterValue(param));
+                    countQuery.setParameter(param, typedQuery.getParameterValue(param));
                 }
             }
         }catch(RuntimeException bug) { 

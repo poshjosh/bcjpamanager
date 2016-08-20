@@ -62,7 +62,7 @@ public class EnumReferencesImpl<E> implements Serializable, EnumReferences<E> {
         PersistenceMetaData metaData = jpaContext.getMetaData();
         Class entityClass = metaData.findEntityClass(tablename);
         if(entityClass == null) {
-            throw new IllegalArgumentException("No entity class specified in persistence file for table: "+tablename);
+            throw new IllegalArgumentException("For table: "+tablename+", no entity class was specified in persistence config: "+this.jpaContext.getPersistenceConfigURI());
         }
         
         return jpaContext.getEntityController(entityClass);

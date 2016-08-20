@@ -39,22 +39,27 @@ XLogger.getInstance().log(Level.FINE, "Random Search Results: {0}", this.getClas
     public void close() { }
 
     @Override
+    public T get(int index) {
+        return results.get(index);
+    }
+
+    @Override
     public PaginatedList<T> getAllResults() {
         return new ListPager(results, results.size());
     }
 
     @Override
-    public List getCurrentBatch() {
-        return this.getBatch(); 
+    public List getCurrentPage() {
+        return this.getPage(); 
     }
 
     @Override
-    public List getBatch() {
-        return this.getBatch(this.getBatchIndex());
+    public List getPage() {
+        return this.getPage(this.getPageNumber());
     }
 
     @Override
-    public int getBatchIndex() {
+    public int getPageNumber() {
         return 0;
     }
 
@@ -64,15 +69,15 @@ XLogger.getInstance().log(Level.FINE, "Random Search Results: {0}", this.getClas
     }
 
     @Override
-    public void setBatchIndex(int pageNumber) { }
+    public void setPageNumber(int pageNumber) { }
 
     @Override
-    public List getBatch(int pageNum) {
+    public List getPage(int pageNum) {
         final int totalSize = this.getSize();
-        if(totalSize == 0 || totalSize <= this.getBatchSize()) {
+        if(totalSize == 0 || totalSize <= this.getPageSize()) {
             return results;
         }else{
-            final int batchSize = totalSize < this.getBatchSize() ? totalSize : this.getBatchSize();
+            final int batchSize = totalSize < this.getPageSize() ? totalSize : this.getPageSize();
             List<T> batch = new ArrayList<>(batchSize);
             while(batch.size() < batchSize) {
                 int index = Util.randomInt(totalSize);
@@ -88,12 +93,12 @@ XLogger.getInstance().log(Level.FINER, "{0} random results:: {1}", this.getClass
     }
 
     @Override
-    public int getBatchCount() {
+    public int getPageCount() {
         return results == null ? 0 : 1;
     }
 
     @Override
-    public int getBatchSize() {
+    public int getPageSize() {
         return 20;
     }
 }

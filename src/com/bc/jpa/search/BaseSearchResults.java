@@ -1,6 +1,6 @@
 package com.bc.jpa.search;
 
-import com.bc.jpa.query.QueryBuilder;
+import com.bc.jpa.dao.BuilderForSelect;
 
 /**
  * @(#)ParamSearchResults.java   25-Apr-2015 22:45:02
@@ -18,24 +18,29 @@ import com.bc.jpa.query.QueryBuilder;
  */
 public class BaseSearchResults<R> extends QuerySearchResults<R> {
     
-    private transient final QueryBuilder<R> queryBuilder;
+    private transient final BuilderForSelect<R> select;
     
-    public BaseSearchResults(QueryBuilder queryBuilder) {
-        super(queryBuilder.build());
-        this.queryBuilder = queryBuilder;
+    public BaseSearchResults(BuilderForSelect<R> select) {
+        super(select.createQuery());
+        this.select = select;
     }
     
     public BaseSearchResults(
-            QueryBuilder<R> queryBuilder, int batchSize, boolean useCache) { 
-        super(queryBuilder.build(), batchSize, useCache);
-        this.queryBuilder = queryBuilder;
+            BuilderForSelect<R> select, int batchSize, boolean useCache) { 
+        super(select.createQuery(), batchSize, useCache);
+        this.select = select;
+        
     }
     
     @Override
     public void close() {
         super.close();
-        if(this.queryBuilder != null && this.queryBuilder.isOpen()) {
-            this.queryBuilder.close();
+        if(this.select != null && this.select.isOpen()) {
+            this.select.close();
         }
+    }
+
+    public final BuilderForSelect<R> getSelect() {
+        return select;
     }
 }

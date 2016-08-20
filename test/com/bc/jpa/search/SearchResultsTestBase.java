@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.bc.jpa.paging.PaginatedList;
-import com.bc.jpa.query.QueryBuilder;
-import com.bc.jpa.query.QueryBuilderImpl2;
 import com.idisc.pu.entities.Feed;
 import com.looseboxes.pu.entities.Product;
 import com.looseboxes.pu.entities.Productvariant;
@@ -14,17 +12,19 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import junit.framework.TestCase;
 import com.bc.jpa.JpaContext;
+import com.bc.jpa.dao.BuilderForSelectImpl;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
+import com.bc.jpa.dao.BuilderForSelect;
 
 /**
  * @author Josh
  */
-public class SearchResultsTest extends TestCase {
+public class SearchResultsTestBase extends TestCase {
     
-    public SearchResultsTest(String testName) {
+    public SearchResultsTestBase(String testName) {
         super(testName);
     }
     
@@ -43,9 +43,9 @@ System.out.println("======================= testing all ======================")
             R firstResult = null;
             
             final int maxBatches = 3;
-            final int batchesToRead = instance.getBatchCount() > maxBatches ? maxBatches : instance.getBatchCount();
+            final int batchesToRead = instance.getPageCount() > maxBatches ? maxBatches : instance.getPageCount();
             
-            final int numberToRead = instance.getBatchSize() * batchesToRead;
+            final int numberToRead = instance.getPageSize() * batchesToRead;
             
             PaginatedList<R> resultsList = instance.getAllResults();
             
@@ -73,7 +73,7 @@ System.out.println("First result: " + firstResult);
             int count = 0;
             for(int batch=0; batch<batchesToRead; batch++) {
                 
-                List<R> batchResults = instance.getBatch(batch);
+                List<R> batchResults = instance.getPage(batch);
                 
                 for(R result:batchResults) {
                     
@@ -130,7 +130,7 @@ this.printList(jpaContext, entityType, resultsList);
             count = 0;
             for(int batch=0; batch<batchesToRead; batch++) {
                 
-                List<R> batchResults = instance.getBatch(batch);
+                List<R> batchResults = instance.getPage(batch);
                 
                 for(R result:batchResults) {
                     
@@ -168,11 +168,11 @@ System.out.println(b);
                 batchSize, useCache);
     }
     
-    protected <R> QueryBuilder<R> createQueryBuilder(
+    protected <R> BuilderForSelect<R> createQueryBuilder(
             JpaContext jpaContext, Class entityType, Class<R> resultType, String query) {
 
-//            QueryBuilder queryBuilder = cf.getQueryBuilder(resultType);
-        QueryBuilder queryBuilder = new QueryBuilderImpl2(
+//            BuilderForSelect queryBuilder = cf.getBuilderForSelect(resultType);
+        BuilderForSelect queryBuilder = new BuilderForSelectImpl(
                 jpaContext.getEntityManager(entityType), resultType, null);
 
         if(entityType == Product.class){

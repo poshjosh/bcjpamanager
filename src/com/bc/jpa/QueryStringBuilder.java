@@ -1,8 +1,7 @@
-package com.bc.jpa.query;
+package com.bc.jpa;
 
 import com.bc.jpa.PersistenceMetaData;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.persistence.EntityManager;
@@ -22,7 +21,7 @@ import javax.persistence.Query;
  * @since    2.0
  * @param <E>
  */
-public interface JPQL<E> {
+public interface QueryStringBuilder<E> {
     
     String getTableAlias();
     
@@ -34,25 +33,21 @@ public interface JPQL<E> {
 
     EntityManagerFactory getEntityManagerFactory();
 
-    List getResultList(Collection selectColumns, Map where, String connector, Map orderBy, int offset, int limit, boolean convertCrossReferences);
+//    List getResultList(Collection selectColumns, Map where, String connector, Map orderBy, int offset, int limit, boolean convertCrossReferences);
     
-    List<E> getResultList(Map where, String connector, Map orderBy, int offset, int limit, boolean convertCrossReferences);
+//    List<E> getResultList(Map where, String connector, Map orderBy, int offset, int limit, boolean convertCrossReferences);
     
-    List getResultList(Collection selectColumns, String column, Object [] values, Map orderBy, int offset, int limit, boolean convertCrossReferences);
+//    List getResultList(Collection selectColumns, String column, Object [] values, Map orderBy, int offset, int limit, boolean convertCrossReferences);
     
-    List<E> getResultList(String column, Object [] values, Map orderBy, int offset, int limit, boolean convertCrossReferences);
+//    List<E> getResultList(String column, Object [] values, Map orderBy, int offset, int limit, boolean convertCrossReferences);
 
-    Object getSingleResult(String selectColumn, Map where, String connector, Map orderBy, boolean convertCrossReferences);
+//    Object getSingleResult(String selectColumn, Map where, String connector, Map orderBy, boolean convertCrossReferences);
     
-    E getSingleResult(Map where, String connector, Map orderBy, boolean convertCrossReferences);
+//    E getSingleResult(Map where, String connector, Map orderBy, boolean convertCrossReferences);
     
-    Object getSingleResult(String selectColumn, String column, Object [] values, Map orderBy, boolean convertCrossReferences);
+//    Object getSingleResult(String selectColumn, String column, Object [] values, Map orderBy, boolean convertCrossReferences);
     
-    E getSingleResult(String column, Object [] values, Map orderBy, boolean convertCrossReferences);
-    
-    Number getSum(String columnToSelect, Map whereParameters);
-    
-    <R extends Number> R getSum(String columnToSelect, Map whereParameters, Class<R> resultType);
+//    E getSingleResult(String column, Object [] values, Map orderBy, boolean convertCrossReferences);
     
     String appendSelectQuery(Collection selectCols, StringBuilder appendTo);
 
@@ -97,13 +92,30 @@ public interface JPQL<E> {
     
     String getTableName();
 
-    boolean isSearchNulls();
-
     String getComparisonOperator();
 
     void setComparisonOperator(String comparison);
     
+    /**
+     * @param entityClass
+     * @deprecated
+     */
+    @Deprecated
     void setEntityClass(Class<E> entityClass);
 
+    /**
+     * Determines if <tt>null</tt> parameters will be considered in where clauses<br/>
+     * If this method returns <tt>true</tt> null parameters will be considered
+     * in where clauses, otherwise null parameters will not be considered.<br/>
+     * By default, in MySQL NULL != NULL. so a query having <tt>where street = null</tt>
+     * will return 0 results even if a column where street is null was found.
+     * @return <tt>true</tt> if nulls should be searched <tt>false</tt> otherwise
+     */
+    boolean isSearchNulls();
+
+    /**
+     * @param searchNulls If <tt>true</tt> nulls should be searched <tt>false</tt> otherwise
+     * @see #isSearchNulls() 
+     */
     void setSearchNulls(boolean searchNulls);
 }

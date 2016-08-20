@@ -1,6 +1,7 @@
 package com.bc.jpa;
 
 import com.bc.jpa.fk.EnumReferences;
+import com.bc.jpa.dao.DatabaseFormat;
 import com.bc.sql.SQLDateTimePatterns;
 import com.bc.sql.SQLUtils;
 import com.bc.util.XLogger;
@@ -58,7 +59,7 @@ public class DatabaseFormatImpl implements DatabaseFormat {
     }
     
     @Override
-    public Object getDatabaseValue(Class entityType, Object key, Object value, Object outputIfNone) {
+    public Object toDatabaseFormat(Class entityType, Object key, Object value, Object outputIfNone) {
         
         Object output;
 
@@ -164,8 +165,12 @@ this.getClass(), key, output);
     public Object getReference(Class entityType, Object key, Object value) {
 XLogger.getInstance().log(Level.FINER, "Column: {0}, value: {1}", this.getClass(), key, value);
         String col = key.toString();
+        
+        EnumReferences enumReferences = this.jpaContext.getEnumReferences();
+        
         // May be an enum reference
-        Object reference = this.getEnumReferences().getEntity(col, value);
+        Object reference = enumReferences == null ? null : enumReferences.getEntity(col, value);
+        
         if(reference == null) {
             // Or an ordinary reference
             reference = this.getJpaContext().getReference(entityType, col, value);
@@ -179,13 +184,5 @@ XLogger.getInstance().log(Level.FINER, "Column: {0}, value: {1}, entity: {2}", t
 XLogger.getInstance().log(Level.FINER, "Entity type: {0}, columns: {1}", 
 this.getClass(), entityType, output == null ? null : Arrays.toString(output));
         return output;
-    }
-    
-    private EnumReferences er_accessViaGetter;
-    public EnumReferences getEnumReferences() {
-        if(er_accessViaGetter == null) {
-            er_accessViaGetter = this.getJpaContext().getEnumReferences();
-        }
-        return er_accessViaGetter;
     }
 }

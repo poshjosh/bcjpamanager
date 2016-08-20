@@ -1,4 +1,4 @@
-package com.bc.jpa.query;
+package com.bc.jpa;
 
 import com.bc.jpa.JpaContext;
 import com.bc.jpa.PersistenceMetaData;
@@ -7,24 +7,14 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.JoinColumn;
-import javax.persistence.NoResultException;
 import javax.persistence.Query;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 
 /**
  * @(#)JPQLImpl.java   27-Jun-2014 17:18:14
@@ -39,7 +29,7 @@ import javax.persistence.criteria.Root;
  * @since    2.0
  * @param <E>
  */
-public class JPQLImpl<E> implements JPQL<E>, Serializable {
+public class QueryStringBuilderImpl<E> implements QueryStringBuilder<E>, Serializable {
     
     private boolean searchNulls = false;
     
@@ -51,187 +41,11 @@ public class JPQLImpl<E> implements JPQL<E>, Serializable {
     
     private Class<E> entityClass;
     
-    public JPQLImpl(JpaContext jpaContext, Class<E> entityClass) {
+    public QueryStringBuilderImpl(JpaContext jpaContext, Class<E> entityClass) {
         this.jpaContext = jpaContext;
         this.entityClass = entityClass;
     }
     
-    @Override
-    public List getResultList(
-        Collection selection, Map where, 
-        String connector, Map orderBy,
-        int offset, int limit,
-        boolean convertCrossReferences) {
-        String query = this.getSelectQuery(selection, where == null ? null : where.keySet(), connector, orderBy);
-        EntityManager em = this.getEntityManagerFactory().createEntityManager();
-        try{
-            Query tq = em.createQuery(query);
-            this.updateQuery(em, tq, where, convertCrossReferences);
-            if(offset > -1) {
-                tq.setFirstResult(offset);
-            }
-            if(limit > -1) {
-                tq.setMaxResults(limit);
-            }
-            return tq.getResultList();
-        }finally{
-            em.close();
-        }
-    }
-
-    @Override
-    public List<E> getResultList(
-        Map where, 
-        String connector, Map orderBy,
-        int offset, int limit,
-        boolean convertCrossReferences) {
-        String query = this.getSelectQuery(null, where==null?null:where.keySet(), connector, orderBy);
-        EntityManager em = this.getEntityManagerFactory().createEntityManager();
-        try{
-            TypedQuery<E> tq = em.createQuery(query, this.getEntityClass());
-            this.updateQuery(em, tq, where, convertCrossReferences);
-            if(offset > -1) {
-                tq.setFirstResult(offset);
-            }
-            if(limit > -1) {
-                tq.setMaxResults(limit);
-            }
-            return tq.getResultList();
-        }finally{
-            em.close();
-        }
-    }
-    
-    @Override
-    public List getResultList(
-        Collection selection,
-        String column, Object [] values,
-        Map orderBy, 
-        int offset, int limit,
-        boolean convertCrossReferences) {
-        
-        String query = this.getSelectQuery(selection, column, values, orderBy);
-        
-        EntityManager em = this.getEntityManagerFactory().createEntityManager();
-        try{
-            Query tq = em.createQuery(query);
-            this.updateQuery(em, tq, column, values, convertCrossReferences);
-            if(offset > -1) {
-                tq.setFirstResult(offset);
-            }
-            if(limit > -1) {
-                tq.setMaxResults(limit);
-            }
-            return tq.getResultList();
-        }finally{
-            em.close();
-        }
-    }
-
-    @Override
-    public List<E> getResultList(
-        String column, Object [] values,
-        Map orderBy, 
-        int offset, int limit,
-        boolean convertCrossReferences) {
-        
-        String query = this.getSelectQuery(null, column, values, orderBy);
-        
-        EntityManager em = this.getEntityManagerFactory().createEntityManager();
-        try{
-            TypedQuery<E> tq = em.createQuery(query, this.getEntityClass());
-            this.updateQuery(em, tq, column, values, convertCrossReferences);
-            if(offset > -1) {
-                tq.setFirstResult(offset);
-            }
-            if(limit > -1) {
-                tq.setMaxResults(limit);
-            }
-            return tq.getResultList();
-        }finally{
-            em.close();
-        }
-    }
-
-    @Override
-    public E getSingleResult(
-        Map where, 
-        String connector, Map orderBy, 
-        boolean convertCrossReferences) {
-        String query = this.getSelectQuery(null, where == null ? null : where.keySet(), connector, orderBy);
-        EntityManager em = this.getEntityManagerFactory().createEntityManager();
-        try{
-            TypedQuery<E> tq = em.createQuery(query, this.getEntityClass());
-            this.updateQuery(em, tq, where, convertCrossReferences);
-            try{
-                return tq.getSingleResult();
-            }catch(NoResultException ignored) {
-                return null;
-            }
-        }finally{
-            em.close();
-        }
-    }
-    
-    @Override
-    public Object getSingleResult(
-        String selectColumn, Map where, 
-        String connector, Map orderBy, 
-        boolean convertCrossReferences) {
-        String query = this.getSelectQuery(Collections.singleton(selectColumn), where==null?null:where.keySet(), connector, orderBy);
-        EntityManager em = this.getEntityManagerFactory().createEntityManager();
-        try{
-            Query tq = em.createQuery(query);
-            this.updateQuery(em, tq, where, convertCrossReferences);
-            try{
-                return tq.getSingleResult();
-            }catch(NoResultException ignored) {
-                return null;
-            }
-        }finally{
-            em.close();
-        }
-    }
-
-    @Override
-    public E getSingleResult(
-        String column, Object [] values,
-        Map orderBy, boolean convertCrossReferences) {
-        String query = this.getSelectQuery(null, column, values, orderBy);
-        EntityManager em = this.getEntityManagerFactory().createEntityManager();
-        try{
-            TypedQuery<E> tq = em.createQuery(query, this.getEntityClass());
-            this.updateQuery(em, tq, column, values, convertCrossReferences);
-            try{
-                return tq.getSingleResult();
-            }catch(NoResultException ignored) {
-                return null;
-            }
-        }finally{
-            em.close();
-        }
-    }
-
-    @Override
-    public Object getSingleResult(
-        String selectColumn,
-        String column, Object [] values,
-        Map orderBy, boolean convertCrossReferences) {
-        String query = this.getSelectQuery(Collections.singleton(selectColumn), column, values, orderBy);
-        EntityManager em = this.getEntityManagerFactory().createEntityManager();
-        try{
-            Query tq = em.createQuery(query);
-            this.updateQuery(em, tq, column, values, convertCrossReferences);
-            try{
-                return tq.getSingleResult();
-            }catch(NoResultException ignored) {
-                return null;
-            }
-        }finally{
-            em.close();
-        }
-    }
-
     /**
      * Updates the query with the parameters contained in the <tt>whereClauseParameters</tt>
      * @param em The EntityManager
@@ -347,53 +161,6 @@ XLogger.getInstance().log(Level.FINER, "At {0} setting {1} to {2}", this.getClas
         return this.getMetaData().getTableName(this.getEntityClass());
     }
     
-    @Override
-    public Number getSum(String columnToSelect, Map whereParameters) {
-        
-        return this.getSum(columnToSelect, whereParameters, Number.class);
-    }
-    
-    @Override
-    public <R extends Number> R getSum(
-            String columnToSelect, Map whereParameters, Class<R> resultType) {
-        
-        EntityManager em = this.getEntityManagerFactory().createEntityManager();
-        try{
-            
-            CriteriaBuilder cb = em.getCriteriaBuilder();
-
-            CriteriaQuery<R> cq = cb.createQuery(resultType);
-
-            Root<E> root = cq.from(this.entityClass);
-
-            Expression<R> sum = cb.sum(root.<R>get(columnToSelect));
-
-            cq = cq.select(sum); 
-            
-            if(whereParameters != null && !whereParameters.isEmpty()) {
-
-                List<Predicate> predicates = new LinkedList<>();
-
-                for(Object entryObj:whereParameters.entrySet()) {
-
-                    Map.Entry entry = (Map.Entry)entryObj;
-                    
-                    predicates.add(cb.equal(root.get(entry.getKey().toString()), entry.getValue())); 
-                }
-                
-                cq.where(cb.and(predicates.toArray(new Predicate[0])));
-            }
-
-            TypedQuery<R> tq = em.createQuery(cq); 
-
-            return tq.getSingleResult();
-            
-        }finally{
-            
-            em.close();
-        }
-    }
-
     @Override
     public String getSelectQuery(
             Collection selectCols, Set whereColumnNames, 
@@ -689,3 +456,233 @@ XLogger.getInstance().log(Level.FINE, "Query: {0}", this.getClass(), selectQuery
         return jpaContext.getMetaData();
     }
 }
+/**
+ * 
+ * 
+//    @Override
+    
+    public List getResultList(
+        Collection selection, Map where, 
+        String connector, Map orderBy,
+        int offset, int limit,
+        boolean convertCrossReferences) {
+        String query = this.getSelectQuery(selection, where == null ? null : where.keySet(), connector, orderBy);
+        EntityManager em = this.getEntityManagerFactory().createEntityManager();
+        try{
+            Query tq = em.createQuery(query);
+            this.updateQuery(em, tq, where, convertCrossReferences);
+            if(offset > -1) {
+                tq.setFirstResult(offset);
+            }
+            if(limit > -1) {
+                tq.setMaxResults(limit);
+            }
+            return tq.getResultList();
+        }finally{
+            em.close();
+        }
+    }
+
+//    @Override
+    public List<E> getResultList(
+        Map where, 
+        String connector, Map orderBy,
+        int offset, int limit,
+        boolean convertCrossReferences) {
+        String query = this.getSelectQuery(null, where==null?null:where.keySet(), connector, orderBy);
+        EntityManager em = this.getEntityManagerFactory().createEntityManager();
+        try{
+            TypedQuery<E> tq = em.createQuery(query, this.getEntityClass());
+            this.updateQuery(em, tq, where, convertCrossReferences);
+            if(offset > -1) {
+                tq.setFirstResult(offset);
+            }
+            if(limit > -1) {
+                tq.setMaxResults(limit);
+            }
+            return tq.getResultList();
+        }finally{
+            em.close();
+        }
+    }
+    
+//    @Override
+    public List getResultList(
+        Collection selection,
+        String column, Object [] values,
+        Map orderBy, 
+        int offset, int limit,
+        boolean convertCrossReferences) {
+        
+        String query = this.getSelectQuery(selection, column, values, orderBy);
+        
+        EntityManager em = this.getEntityManagerFactory().createEntityManager();
+        try{
+            Query tq = em.createQuery(query);
+            this.updateQuery(em, tq, column, values, convertCrossReferences);
+            if(offset > -1) {
+                tq.setFirstResult(offset);
+            }
+            if(limit > -1) {
+                tq.setMaxResults(limit);
+            }
+            return tq.getResultList();
+        }finally{
+            em.close();
+        }
+    }
+
+//    @Override
+    public List<E> getResultList(
+        String column, Object [] values,
+        Map orderBy, 
+        int offset, int limit,
+        boolean convertCrossReferences) {
+        
+        String query = this.getSelectQuery(null, column, values, orderBy);
+        
+        EntityManager em = this.getEntityManagerFactory().createEntityManager();
+        try{
+            TypedQuery<E> tq = em.createQuery(query, this.getEntityClass());
+            this.updateQuery(em, tq, column, values, convertCrossReferences);
+            if(offset > -1) {
+                tq.setFirstResult(offset);
+            }
+            if(limit > -1) {
+                tq.setMaxResults(limit);
+            }
+            return tq.getResultList();
+        }finally{
+            em.close();
+        }
+    }
+
+//    @Override
+    public E getSingleResult(
+        Map where, 
+        String connector, Map orderBy, 
+        boolean convertCrossReferences) {
+        String query = this.getSelectQuery(null, where == null ? null : where.keySet(), connector, orderBy);
+        EntityManager em = this.getEntityManagerFactory().createEntityManager();
+        try{
+            TypedQuery<E> tq = em.createQuery(query, this.getEntityClass());
+            this.updateQuery(em, tq, where, convertCrossReferences);
+            try{
+                return tq.getSingleResult();
+            }catch(NoResultException ignored) {
+                return null;
+            }
+        }finally{
+            em.close();
+        }
+    }
+    
+//    @Override
+    public Object getSingleResult(
+        String selectColumn, Map where, 
+        String connector, Map orderBy, 
+        boolean convertCrossReferences) {
+        String query = this.getSelectQuery(Collections.singleton(selectColumn), where==null?null:where.keySet(), connector, orderBy);
+        EntityManager em = this.getEntityManagerFactory().createEntityManager();
+        try{
+            Query tq = em.createQuery(query);
+            this.updateQuery(em, tq, where, convertCrossReferences);
+            try{
+                return tq.getSingleResult();
+            }catch(NoResultException ignored) {
+                return null;
+            }
+        }finally{
+            em.close();
+        }
+    }
+
+//    @Override
+    public E getSingleResult(
+        String column, Object [] values,
+        Map orderBy, boolean convertCrossReferences) {
+        String query = this.getSelectQuery(null, column, values, orderBy);
+        EntityManager em = this.getEntityManagerFactory().createEntityManager();
+        try{
+            TypedQuery<E> tq = em.createQuery(query, this.getEntityClass());
+            this.updateQuery(em, tq, column, values, convertCrossReferences);
+            try{
+                return tq.getSingleResult();
+            }catch(NoResultException ignored) {
+                return null;
+            }
+        }finally{
+            em.close();
+        }
+    }
+
+//    @Override
+    public Object getSingleResult(
+        String selectColumn,
+        String column, Object [] values,
+        Map orderBy, boolean convertCrossReferences) {
+        String query = this.getSelectQuery(Collections.singleton(selectColumn), column, values, orderBy);
+        EntityManager em = this.getEntityManagerFactory().createEntityManager();
+        try{
+            Query tq = em.createQuery(query);
+            this.updateQuery(em, tq, column, values, convertCrossReferences);
+            try{
+                return tq.getSingleResult();
+            }catch(NoResultException ignored) {
+                return null;
+            }
+        }finally{
+            em.close();
+        }
+    }
+
+
+    @Override
+    public Number getSum(String columnToSelect, Map whereParameters) {
+        
+        return this.getSum(columnToSelect, whereParameters, Number.class);
+    }
+    
+    @Override
+    public <R extends Number> R getSum(
+            String columnToSelect, Map whereParameters, Class<R> resultType) {
+        
+        EntityManager em = this.getEntityManagerFactory().createEntityManager();
+        try{
+            
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+
+            CriteriaQuery<R> cq = cb.createQuery(resultType);
+
+            Root<E> root = cq.from(this.entityClass);
+
+            Expression<R> sum = cb.sum(root.<R>get(columnToSelect));
+
+            cq = cq.select(sum); 
+            
+            if(whereParameters != null && !whereParameters.isEmpty()) {
+
+                List<Predicate> predicates = new LinkedList<>();
+
+                for(Object entryObj:whereParameters.entrySet()) {
+
+                    Map.Entry entry = (Map.Entry)entryObj;
+                    
+                    predicates.add(cb.equal(root.get(entry.getKey().toString()), entry.getValue())); 
+                }
+                
+                cq.where(cb.and(predicates.toArray(new Predicate[0])));
+            }
+
+            TypedQuery<R> tq = em.createQuery(cq); 
+
+            return tq.getSingleResult();
+            
+        }finally{
+            
+            em.close();
+        }
+    }
+
+ * 
+ */

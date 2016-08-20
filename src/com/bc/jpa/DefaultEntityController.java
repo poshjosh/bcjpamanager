@@ -1,7 +1,5 @@
 package com.bc.jpa;
 
-import com.bc.jpa.query.JPQLImpl;
-import com.bc.jpa.query.JPQL;
 import com.bc.jpa.exceptions.EntityInstantiationException;
 import com.bc.jpa.exceptions.NonexistentEntityException;
 import com.bc.jpa.util.EntityMapBuilderImpl;
@@ -29,6 +27,13 @@ import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import org.eclipse.persistence.config.QueryHints;
 import org.eclipse.persistence.config.ResultType;
+import com.bc.util.XLogger;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import com.bc.jpa.dao.BuilderForSelect;
 
 /**
  * @(#)DefaultEntityController.java   08-Dec-2013 02:14:22
@@ -53,14 +58,14 @@ public class DefaultEntityController<E, e>
     
     private Object resultType;
     
-    private final JPQL jpql;
+    private final QueryStringBuilder qsb;
     
     public DefaultEntityController(
             JpaContext jpaContext, Class<E> entityClass) {
     
         super(jpaContext, entityClass);
         
-        this.jpql = new JPQLImpl(jpaContext, entityClass);
+        this.qsb = new QueryStringBuilderImpl(jpaContext, entityClass);
     }
     
     @Override
@@ -223,6 +228,26 @@ public class DefaultEntityController<E, e>
     }
 
     @Override
+    public int delete(EntityManager em, String column, Object value) {
+        
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        
+        Class<E> entityClass = this.getEntityClass();
+
+        CriteriaDelete<E> delete = cb.createCriteriaDelete(entityClass);
+
+        Root<E> entity = delete.from(entityClass);
+
+        Predicate where = cb.equal(entity.get(column), value); 
+
+        delete.where(where);
+
+        Query query = em.createQuery(delete); 
+
+        return query.executeUpdate();
+    }    
+    
+    @Override
     public int delete(Map params) {
         
         int updateCount = 0;
@@ -243,7 +268,7 @@ public class DefaultEntityController<E, e>
             // This must come first
             params = this.formatWhereParameters(params);
             
-            jpql.appendWhereClause("WHERE", params.keySet(), "s", "AND", queryBuff);
+            qsb.appendWhereClause("WHERE", params.keySet(), "s", "AND", queryBuff);
             
 logger.log(Level.FINER, " Query: {0}", queryBuff);            
             EntityManager em = this.getEntityManager();
@@ -252,7 +277,7 @@ logger.log(Level.FINER, " Query: {0}", queryBuff);
 
                 TypedQuery<E> q = em.createQuery(queryBuff.toString(), this.getEntityClass());
 
-                jpql.updateQuery(em, q, params, true);
+                qsb.updateQuery(em, q, params, true);
 
                 EntityTransaction t = em.getTransaction();
                 
@@ -338,33 +363,33 @@ logger.log(Level.FINER, " Query: {0}", queryBuff);
         // This must come first
         orderBy = this.formatOrderBy(orderBy);
         
-        final String selectQuery = jpql.getSelectQuery(null, column, values, orderBy);
-logger.log(Level.FINER, "Query: {0}", selectQuery);        
-        EntityManager em = this.getEntityManager();
-        
-        try {
+        try(BuilderForSelect<E> qb = this.getJpaContext().getBuilderForSelect(this.getEntityClass())) {
             
-            Query q = this.createQuery(em, selectQuery, false, true);
-
-            jpql.updateQuery(em, q, column, values, true);
+            qb.from(this.getEntityClass()).where(column, values);
             
-            if (offset > 0) {
-                q.setFirstResult(offset);
-            }
-
-            if (limit > 0) {
-                q.setMaxResults(limit);
+            if(orderBy != null && !orderBy.isEmpty()) {
+                
+                qb.orderBy(orderBy);
             }
             
-            List result = q.getResultList();
+            TypedQuery<E> tq = qb.createQuery();
+            
+            if(offset > -1) {
+                
+                tq.setFirstResult(offset);
+            }
+            
+            if(limit > -1) {
+                
+                tq.setMaxResults(limit);
+            }
+            
+            List result = tq.getResultList();
             
 logger.log(Level.FINEST, "Before converting to result type, results: {0}", result==null?null:result.size());            
             result = this.convertToResultType(null, result);
 logger.log(Level.FINEST, "After converting to result type, results: {0}", result==null?null:result.size());                        
             return result;
-            
-        } finally {
-            em.close();
         }
     }
 
@@ -398,44 +423,64 @@ logger.log(Level.FINEST, "After converting to result type, results: {0}", result
     }
     
     private List selectColumns(
-            Collection selectCols, Map whereClauseParameters, 
+            Collection selectCols, Map where, 
             String connector, Map orderBy, int offset, int limit) {
         
         // This must come first
         selectCols = this.formatColumnNames(selectCols);
-        whereClauseParameters = this.formatWhereParameters(whereClauseParameters);
+        where = this.formatWhereParameters(where);
         orderBy = this.formatOrderBy(orderBy);
         
-        String selectQuery = jpql.getSelectQuery(selectCols, whereClauseParameters == null ? null : whereClauseParameters.keySet(), connector, orderBy);
-        
-logger.log(Level.FINER, "Query: {0}", selectQuery);            
-        
-        EntityManager em = this.getEntityManager();
-        
-        try {
+        try(BuilderForSelect<E> qb = this.getJpaContext().getBuilderForSelect(this.getEntityClass())) {
             
-            boolean hasSelectCols = selectCols != null && !selectCols.isEmpty();
+            qb.from(this.getEntityClass());
             
-            Query q = this.createQuery(em, selectQuery, false, !hasSelectCols);
+            if(selectCols != null && !selectCols.isEmpty()) {
+             
+                qb.select(selectCols);
+            }
             
-            jpql.updateQuery(em, q, whereClauseParameters, true);
+            if(where != null && !where.isEmpty()) {
+                
+                Iterator iter = where.keySet().iterator();
+                
+                while(iter.hasNext()) {
+                    Object key = iter.next();
+                    Object val = where.get(key);
+                    if(iter.hasNext()) {
+                        if("AND".equalsIgnoreCase(connector)) {
+                            qb.where(key.toString(), BuilderForSelect.EQ, val, BuilderForSelect.AND);
+                        }else if("OR".equalsIgnoreCase(connector)) {
+                            qb.where(key.toString(), BuilderForSelect.EQ, val, BuilderForSelect.OR);
+                        }else{
+                            throw new UnsupportedOperationException("Expected 'OR' or 'AND', found: "+connector);
+                        }
+                    }else{
+                        qb.where(key.toString(), BuilderForSelect.EQ, val);
+                    }
+                }
+            }
+            
+            if(orderBy != null && !orderBy.isEmpty()) {
+                
+                qb.orderBy(orderBy);
+            }
+            
+            TypedQuery<E> tq = qb.createQuery();
             
             if (offset > 0) {
-                q.setFirstResult(offset);
+                tq.setFirstResult(offset);
             }
 
             if (limit > 0) {
-                q.setMaxResults(limit);
+                tq.setMaxResults(limit);
             }
             
-            List result = q.getResultList(); 
+            List result = tq.getResultList(); 
             
             result = this.convertToResultType(selectCols, result);
             
             return result;
-            
-        } finally {
-            em.close();
         }
     }
     
@@ -471,9 +516,92 @@ logger.log(Level.FINER, "Query: {0}", selectQuery);
 
     @Override
     public int update(String searchCol, Object searchVal, String updateCol, Object updateVal) {
-        List<E> edited = edit(searchCol, searchVal, updateCol, updateVal);
-        return edited == null ? -1 : edited.size();
+        
+        int updateCount = -1;
+        
+        EntityManager em = this.getJpaContext().getEntityManager(this.getEntityClass());
+        
+        try{
+            
+            try{
+
+                em.getTransaction().begin();
+
+                updateCount = this.update(em, searchCol, searchVal, updateCol, updateVal);
+
+                em.getTransaction().commit();
+
+            }finally{
+
+                if(em.getTransaction().isActive()) {
+
+                    em.getTransaction().rollback();
+                }
+            }
+        }finally{
+            em.close();
+        }
+        
+        return updateCount;
     }
+    
+    @Override
+    public int update(String whereColumn, Set whereValues, String updateColumn, Object updateValue) {
+         
+        int updateCount = 0;
+        
+        EntityManager em = this.getJpaContext().getEntityManager(this.getEntityClass());
+        
+        try{
+            try{
+                
+                em.getTransaction().begin();
+                
+                for(Object oldValue:whereValues) { 
+                    
+                    updateCount += this.update(em, 
+                            whereColumn, oldValue, 
+                            updateColumn, updateValue);
+                }
+                
+                em.getTransaction().commit();
+                
+            }finally{
+                if(em.getTransaction().isActive()) {
+                    em.getTransaction().rollback();
+                }
+            }
+        }finally{
+            em.close();
+        }
+        
+XLogger.getInstance().log(Level.FINE, "{0} / {1} success rate for edit operation", 
+        this.getClass(), updateCount, whereValues.size());
+
+        return updateCount;
+    }
+    
+    @Override
+    public int update(EntityManager em, String oldColumn, Object oldValue, String newColumn, Object newValue) {
+        
+        Class<E> entityClass = this.getEntityClass();
+        
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+
+        CriteriaUpdate<E> update = cb.createCriteriaUpdate(entityClass);
+
+        Root<E> entity = update.from(entityClass);
+
+        update.set(newColumn, newValue);
+
+        Predicate where = cb.equal(entity.get(oldColumn), oldValue); 
+
+        update.where(where);
+
+        Query query = em.createQuery(update); 
+
+        return query.executeUpdate();
+    }    
     
     @Override
     public List<E> edit(String searchCol, Object searchVal, String updateCol, Object updateVal) {
@@ -513,7 +641,7 @@ logger.log(Level.FINER, "Query: {0}", selectQuery);
         // This must come first
         params = this.formatWhereParameters(params);
         
-        jpql.appendWhereClause("WHERE", params.keySet(), "s", "AND", queryBuff);
+        qsb.appendWhereClause("WHERE", params.keySet(), "s", "AND", queryBuff);
         
 logger.log(Level.FINER, "Query: {0}", queryBuff);            
         
@@ -523,7 +651,7 @@ logger.log(Level.FINER, "Query: {0}", queryBuff);
             
             TypedQuery<E> q = em.createQuery(queryBuff.toString(), this.getEntityClass());
             
-            jpql.updateQuery(em, q, params, true);
+            qsb.updateQuery(em, q, params, true);
                 
             return ((Long) q.getSingleResult()).intValue();
             
@@ -699,32 +827,7 @@ logger.log(Level.FINER, "Updating entity: {0} with values {1}", new Object[]{ent
     }
 
     /**
-     * Lets say we have a reference table named <tt>role</tt> as shown below: 
-     * <pre>
-     * ----------------
-     *  roleid | role
-     * ----------------
-     *  1      | admin
-     * ----------------
-     *  2      | user
-     * ----------------
-     *  3      | guest
-     * ----------------
-     * </pre>
-     * <p>And given the referencing table named <tt>userroles</tt> with definition below:</p>
-     * <pre>
-     * create table userroles(
-     *   userroleid INTEGER(8) AUTO_INCREMENT not null primary key,
-     *   userid INTEGER(8) not null UNIQUE,
-     *   role SHORT(2) not null,
-     *   FOREIGN KEY (role) REFERENCES role(roleid)
-     * )ENGINE=INNODB;
-     * </pre>
-     * <p>
-     * Calling this method with arguments <tt>role</tt> and <tt>2</tt> respectively 
-     * will return the <tt>Role</tt> entity with the specified id.
-     * </p>
-     * The method returns null if the arguments have no matching reference.
+     * @see com.bc.jpa.JpaContext#getReference(java.lang.Class, java.lang.String, java.lang.Object) 
      * @param col
      * @param val
      * @return 
@@ -821,26 +924,11 @@ logger.log(Level.FINER, "Updating entity: {0} with values {1}", new Object[]{ent
     }
 
     @Override
-    public JPQL getJpql() {
-        return jpql;
-    }
-
-    @Override
     public void setEntityClass(Class<E> aClass) {
         super.setEntityClass(aClass);
-        jpql.setEntityClass(aClass);
+        qsb.setEntityClass(aClass);
     }
     
-    @Override
-    public boolean isSearchNulls() {
-        return jpql.isSearchNulls();
-    }
-
-    @Override
-    public void setSearchNulls(boolean searchNulls) {
-        this.jpql.setSearchNulls(searchNulls);
-    }
-
     @Override
     public Object getResultType() {
         return resultType;

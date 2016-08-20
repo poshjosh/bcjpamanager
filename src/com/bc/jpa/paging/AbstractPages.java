@@ -2,7 +2,6 @@ package com.bc.jpa.paging;
 
 import com.bc.util.BatchUtils;
 import com.bc.util.XLogger;
-import java.util.AbstractList;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -21,9 +20,15 @@ import java.util.logging.Level;
  * @version  2.0
  * @since    2.0
  */
-public abstract class AbstractPagingList<T> 
-        extends AbstractList<T> implements PaginatedList<T> {
+public abstract class AbstractPages<T> implements Paginated<T> {
 
+    /**
+     * The size determined by {@link #calculateSize()}
+     */
+    private int $_size = -1;
+    
+    private final int batchSize;
+    
     private int previousPageNum = -1;
 
     /**
@@ -34,35 +39,65 @@ public abstract class AbstractPagingList<T>
      */
     private List<T>[] batches;
 
-    public AbstractPagingList() {  }
-
+    public AbstractPages(int pageSize) {  
+        if(pageSize < 1) {
+            throw new IllegalArgumentException("For page size, expected value > 0. found: "+pageSize);
+        }
+        this.batchSize = pageSize;
+    }
+    
     protected abstract List<T> loadBatch(int pageNum);
     
-    protected abstract List<T> [] initPagesBuffer();
+    protected abstract int calculateSize();
     
     @Override
     public void reset() {
-        previousPageNum = -1;
-        batches = null;
+        this.$_size = -1;
+        this.previousPageNum = -1;
+        this.batches = null;
+    }
+    
+    @Override
+    public int getSize() {
+        if(this.$_size == -1) {
+            this.$_size = calculateSize();
+        }
+        return this.$_size;
     }
     
     @Override
     public T get(int index) {
-        int batchSize = this.getBatchSize();
         int batchIndex = BatchUtils.getBatch(index, batchSize);
         int indexInBatch = BatchUtils.getIndexInBatch(index, batchSize);
 XLogger.getInstance().log(Level.FINER, "Retreiving index {0}, batctCount: {1}, batchIndex: {2}, indexInBatch: {3}",
-        this.getClass(), index, this.getBatchCount(), batchIndex, indexInBatch);
-        return getBatch(batchIndex).get(indexInBatch);
+        this.getClass(), index, this.getPageCount(), batchIndex, indexInBatch);
+        return getPage(batchIndex).get(indexInBatch);
     }
 
-    @Override
-    public int getBatchSize() {
-        return 20;
+    protected List<T> [] initPagesBuffer() {
+        
+        if(this.getPageSize() < 1) {
+            throw new UnsupportedOperationException("Page size "+this.getPageSize()+"< 1");
+        }
+        
+        final int numPages = this.computeNumberOfPages();
+        
+XLogger.getInstance().log(Level.FINE, "Size: {0}, number of pages: {1}", this.getClass(), this.getSize(), numPages);
+        
+        //@numPages. null pages == not initialized, 0 pages == initialized but empty
+        //
+        List<T> [] pages = new List[numPages];
+
+        return pages;
     }
     
     @Override
-    public int getBatchCount() {
+    public final int getPageSize() {
+        return this.batchSize;
+    }
+    
+    @Override
+    public int getPageCount() {
         return getBatches().length;
     }
 
@@ -71,22 +106,23 @@ XLogger.getInstance().log(Level.FINER, "Retreiving index {0}, batctCount: {1}, b
         //
         if(batches == null) {
             
-            if(this.getBatchSize() < 1) {
-                throw new UnsupportedOperationException("Page size "+this.getBatchSize()+" < 1");
+            if(this.getPageSize() < 1) {
+                throw new UnsupportedOperationException("Page size "+this.getPageSize()+" < 1");
             }
+            
             batches = this.initPagesBuffer();
 XLogger.getInstance().log(Level.FINE, 
 "Initialized batches array. Total Size: {0}, batch size: {1}, number of batches: {2}", 
-this.getClass(), this.size(), this.getBatchSize(), this.getBatchCount());        
+this.getClass(), this.getSize(), this.getPageSize(), this.getPageCount());        
         }
         return batches;
     }
     
     @Override
-    public List<T> getBatch(int pageNum) {
+    public List<T> getPage(int pageNum) {
         
-        if(pageNum < 0 || pageNum >= this.getBatchCount()) {
-            throw new IndexOutOfBoundsException("Page number: "+pageNum+", number of pages: "+this.getBatchCount());
+        if(pageNum < 0 || pageNum >= this.getPageCount()) {
+            throw new IndexOutOfBoundsException("Page number: "+pageNum+", number of pages: "+this.getPageCount());
         }
         
         List<T> page = getBatches()[pageNum];
@@ -105,7 +141,7 @@ XLogger.getInstance().log(Level.FINER, "Loaded from cache. Batch {0}, size of ba
         this.getClass(), pageNum, page.size());
         }
         
-        if(!this.isUseCache() && previousPageNum > -1 && previousPageNum < this.getBatchCount()) {
+        if(!this.isUseCache() && previousPageNum > -1 && previousPageNum < this.getPageCount()) {
             
 XLogger.getInstance().log(Level.FINER, "Clearing batch at {0}", this.getClass(), previousPageNum);
 
@@ -117,7 +153,10 @@ XLogger.getInstance().log(Level.FINER, "Clearing batch at {0}", this.getClass(),
         return page;
     }
     
-    public final int computeNumberOfPages(int size, int pageSize) {
+    public final int computeNumberOfPages() {
+        
+        final int size = this.getSize();
+        final int pageSize = this.getPageSize();
         
         //@numPages. null pages == not initialized, 0 pages == initialized but empty
         //

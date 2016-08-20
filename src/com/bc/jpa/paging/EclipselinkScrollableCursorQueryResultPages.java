@@ -1,6 +1,7 @@
 package com.bc.jpa.paging;
 
 import java.util.List;
+import java.util.Objects;
 import javax.persistence.TypedQuery;
 import org.eclipse.persistence.queries.ScrollableCursor;
 
@@ -27,23 +28,24 @@ import org.eclipse.persistence.queries.ScrollableCursor;
  * @version  2.0
  * @since    2.0
  */
-public class EclipselinkScrollablePagingList<T> extends AbstractPagingList<T> {
-
-    private final int batchSize;
+public class EclipselinkScrollableCursorQueryResultPages<T> extends AbstractPages<T> {
     
     private final TypedQuery<T> typedQuery;
     
     private ScrollableCursor scrollableCursor;
     
-    public EclipselinkScrollablePagingList(TypedQuery<T> typedQuery, int batchSize) { 
-        if(typedQuery == null) {
-            throw new NullPointerException();
+    public EclipselinkScrollableCursorQueryResultPages(TypedQuery<T> typedQuery, int batchSize) { 
+        super(batchSize);
+        this.typedQuery = Objects.requireNonNull(typedQuery);
+    }
+
+    @Override
+    protected int calculateSize() {
+        if(this.scrollableCursor == null) {
+            // Initializes the scrollableCursor
+            this.getBatches();
         }
-        if(batchSize < 1) {
-            throw new IllegalArgumentException();
-        }
-        this.batchSize = batchSize;
-        this.typedQuery = typedQuery;
+        return this.scrollableCursor.size();
     }
 
     /**
@@ -56,35 +58,22 @@ public class EclipselinkScrollablePagingList<T> extends AbstractPagingList<T> {
     }
     
     @Override
-    public final int getBatchSize() {
-        return batchSize;
-    }
-    
-    @Override
-    public int size() {
-        if(this.scrollableCursor == null) {
-            // Initializes the scrollableCursor
-            this.getBatches();
-        }
-        return this.scrollableCursor.size();
-    }
-
-    @Override
     protected List<T> [] initPagesBuffer() {
         TypedQuery<T> query = this.getQuery();
         if(query == null) {
             throw new NullPointerException();
         }
-        if(this.getBatchSize() < 1) {
+        if(this.getPageSize() < 1) {
             throw new UnsupportedOperationException("Page size < 1");
         }
+        final int batchSize = this.getPageSize();
         query.setHint("eclipselink.cursor.scrollable", true);
         query.setHint("eclipselink.cursor.page-size", batchSize);
         this.scrollableCursor = (ScrollableCursor)query.getSingleResult();
         
         //@numPages. null pages == not initialized, 0 pages == initialized but empty
         //
-        List<T> [] pages = new List[this.computeNumberOfPages(this.scrollableCursor.size(), batchSize)];
+        List<T> [] pages = new List[this.computeNumberOfPages()];
         
         return pages;
     }
@@ -92,27 +81,27 @@ public class EclipselinkScrollablePagingList<T> extends AbstractPagingList<T> {
     @Override
     protected List<T> loadBatch(int pageNum) {
         
+        final int batchSize = this.getPageSize();
+        
         final int offset = pageNum * batchSize;
         
         if(scrollableCursor.absolute(offset)) {
             
-            final int size = this.size();
-
-            final int pageCount = this.computeNumberOfPages(size, batchSize);
+            final int pageCount = this.computeNumberOfPages();
 
             int currentPageSize;
 
             if(pageNum < pageCount - 1) {
                 currentPageSize = batchSize;
             }else{
-                currentPageSize = size - offset;
+                currentPageSize = this.getSize() - offset;
             }
 
             return (List<T>)scrollableCursor.next(currentPageSize);
 
         }else{
 
-            throw new IndexOutOfBoundsException("Number of pages: "+this.getBatchCount()+
+            throw new IndexOutOfBoundsException("Number of pages: "+this.getPageCount()+
                     ", page number: "+pageNum+" starting at offset: "+offset);
         }
     }

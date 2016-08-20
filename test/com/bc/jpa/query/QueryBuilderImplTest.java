@@ -1,5 +1,6 @@
 package com.bc.jpa.query;
 
+import com.bc.jpa.dao.BuilderForSelect;
 import com.looseboxes.pu.entities.Orderproduct;
 import com.looseboxes.pu.entities.Product;
 import com.looseboxes.pu.entities.Productorder;
@@ -13,7 +14,7 @@ import org.junit.Test;
 /**
  * @author Josh
  */
-public class QueryBuilderImplTest extends QueryBuilderTestBase {
+public class QueryBuilderImplTest extends TestBaseForJpaQuery {
 
     public QueryBuilderImplTest(String testName) {
         super(testName);
@@ -23,8 +24,8 @@ public class QueryBuilderImplTest extends QueryBuilderTestBase {
     public void testSearchAndWhereGreaterOrEquals() {
         
 System.out.println("#testSearchAndWhereGreaterOrEquals");
-        
-        try(QueryBuilder<Object[]> instance = createQueryBuilder(Object[].class)) {
+
+        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
         
             final String ID_COL = "productid";
             final String query = "dress";
@@ -32,13 +33,13 @@ System.out.println("#testSearchAndWhereGreaterOrEquals");
             final String [] colsToSelect = new String[]{"productid", "productName", "price"};
             final String [] colsToSearch = new String[]{"productName", "description", "keywords", "model"};
             
-            TypedQuery<Object[]> tq = instance.forType(ENTITY_TYPE)
+            TypedQuery<Object[]> tq = instance.from(ENTITY_TYPE)
                     .select(colsToSelect)
-                    .where(colsToSearch, QueryBuilder.LIKE, queryExpression, QueryBuilder.OR)
+                    .where(colsToSearch, BuilderForSelect.LIKE, queryExpression, BuilderForSelect.OR)
                     .and()
-                    .where(ID_COL, QueryBuilder.GREATER_OR_EQUALS, SELECTED_PRODUCTID)
+                    .where(ID_COL, BuilderForSelect.GREATER_OR_EQUALS, SELECTED_PRODUCTID)
                     .descOrder(ID_COL)
-                    .build();
+                    .createQuery();
             List<Object[]> results = tq.getResultList();
 this.printResults(results, true);
         }
@@ -49,14 +50,14 @@ this.printResults(results, true);
         
 System.out.println("#testSelectAndLikeAndGreaterOrEquals");
         
-        try(QueryBuilder<Object[]> instance = createQueryBuilder(Object[].class)) {
+        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
             
-            TypedQuery<Object[]> tq = instance.forType(ENTITY_TYPE)
+            TypedQuery<Object[]> tq = instance.from(ENTITY_TYPE)
                     .select("productid", "productName", "price", "description")
-                    .where("productName", QueryBuilder.LIKE, "%pepperts%", QueryBuilder.AND)
-                    .where("productid", QueryBuilder.GREATER_OR_EQUALS, SELECTED_PRODUCTID - 100)
+                    .where("productName", BuilderForSelect.LIKE, "%pepperts%", BuilderForSelect.AND)
+                    .where("productid", BuilderForSelect.GREATER_OR_EQUALS, SELECTED_PRODUCTID - 100)
                     .ascOrder("productid")
-                    .build();
+                    .createQuery();
 
             List<Object[]> results = tq.getResultList();
 this.printResults(results, true);
@@ -84,12 +85,12 @@ this.printResults(results, true);
                 
                 productvariant = variant;
                 
-                try(QueryBuilder instance = createQueryBuilder(Productorder.class)) {
+                try(BuilderForSelect<Productorder> instance = createSelect(Productorder.class)) {
                     
                     TypedQuery<Productorder> tq = 
                             instance.where(Orderproduct.class, "productvariantid", variant)
                             .join(Productorder.class, "orderproductList", JoinType.INNER, Orderproduct.class)
-                            .build();
+                            .createQuery();
 
                     orders = tq.getResultList();
                 }
@@ -106,13 +107,11 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
     @Test
     public void testResetAndCommit() {
         
-        try(QueryBuilder instance = createQueryBuilder(ENTITY_TYPE)) {
+        try(BuilderForSelect<Product> instance = createSelect(ENTITY_TYPE)) {
         
             final String COLUMN = "productid";
 
-            TypedQuery<Product> tq = instance.forType(ENTITY_TYPE).descOrder(COLUMN).build();
-
-            assertEquals("QueryBuilder should be commited after calling #build, but is not commited", instance.isCommited(), true);
+            TypedQuery<Product> tq = instance.from(ENTITY_TYPE).descOrder(COLUMN).createQuery();
 
             try{
 
@@ -124,7 +123,7 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
 
 //            instance.reset();
 
-//            tq = instance.forType(ENTITY_TYPE).where(COLUMN, QueryBuilder.EQUALS, 519).descOrder(COLUMN).build();
+//            tq = instance.from(ENTITY_TYPE).where(COLUMN, BuilderForSelect.EQUALS, 519).descOrder(COLUMN).createQuery();
 
 //            Product result = tq.getSingleResult();
         }
@@ -133,18 +132,18 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
     @Test
     public void testComplex() {
         
-        try(QueryBuilder<Object[]> instance = createQueryBuilder(Object[].class)) {
+        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
         
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_YEAR, -20);
 
-            TypedQuery<Object[]> tq = instance.forType(ENTITY_TYPE)
+            TypedQuery<Object[]> tq = instance.from(ENTITY_TYPE)
                     .select("productid", "productName", "price")
                     .search("girls dress", "productName", "description", "keywords", "model")
-                    .and().where("price", QueryBuilder.GREATER_OR_EQUALS, 2_000)
-                    .and().where("datecreated", QueryBuilder.LESS_OR_EQUALS, cal.getTime())
+                    .and().where("price", BuilderForSelect.GREATER_OR_EQUALS, 2_000)
+                    .and().where("datecreated", BuilderForSelect.LESS_OR_EQUALS, cal.getTime())
                     .descOrder("productid")
-                    .build();
+                    .createQuery();
 
             List<Object[]> results = tq.getResultList();
 

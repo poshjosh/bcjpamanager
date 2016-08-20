@@ -10,13 +10,14 @@ import java.net.URI;
 
 public class IdiscJpaContext extends JpaContextImpl{
     
-  private static class PersistenceUriFilter implements PersistenceURISelector.URIFilter {
+  public static class PersistenceUriFilter implements PersistenceURISelector.URIFilter {
     @Override
     public boolean accept(URI uri) {
-        return uri.toString().contains("idisc");
+        final String uriStr = uri.toString();
+        return uriStr.contains("idisc");
     }
   }
-
+  
   public IdiscJpaContext() throws IOException {
     this(new MySQLDateTimePatterns());
   }

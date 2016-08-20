@@ -36,16 +36,6 @@ public interface EntityControllerBase<E, e> {
     
     void edit(E entity) throws NonexistentEntityException, Exception;
 
-    /**
-     * Simply throws UnsupportedOperationException.<br/>
-     * Rather use {@link #executeQuery(java.lang.String)} or
-     * {@link #executeUpdate(java.lang.String)}
-     * @deprecated 
-     * @see #executeQuery(java.lang.String) 
-     * @see #executeUpdate(java.lang.String) 
-     */
-    boolean execute(String query);
-
     int executeUpdate(String query);
     
     List executeQuery(String query);

@@ -1,13 +1,13 @@
 package com.bc.jpa;
 
+import com.bc.jpa.dao.DatabaseFormat;
 import com.bc.jpa.util.PersistenceURISelector;
-import com.bc.jpa.query.JPQL;
-import com.bc.jpa.query.JPQLImpl;
-import com.bc.jpa.query.QueryBuilder;
-import com.bc.jpa.query.QueryBuilderImpl;
 import com.bc.jpa.fk.EnumReferences;
 import com.bc.jpa.fk.EnumReferencesImpl;
-import com.bc.jpa.util.AlternativePersistenceClassLoader;
+import com.bc.jpa.classloaders.AlternativePersistenceClassLoader;
+import com.bc.jpa.classloaders.AlternativePersistenceURLClassLoader;
+import com.bc.jpa.dao.BuilderForDelete;
+import com.bc.jpa.dao.BuilderForDeleteImpl;
 import com.bc.sql.MySQLDateTimePatterns;
 import com.bc.sql.SQLDateTimePatterns;
 import com.bc.util.XLogger;
@@ -17,9 +17,11 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
@@ -27,6 +29,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.JoinColumn;
 import javax.persistence.Persistence;
+import com.bc.jpa.dao.BuilderForSelect;
+import com.bc.jpa.dao.BuilderForUpdate;
+import com.bc.jpa.dao.BuilderForUpdateImpl;
 
 /**
  * @(#)DefaultControllerFactory.java   28-Jun-2014 18:47:01
@@ -54,11 +59,6 @@ public class JpaContextImpl implements JpaContext, Serializable {
     
     private final EnumReferences enumReferences;
     
-    public JpaContextImpl(SQLDateTimePatterns dateTimePatterns, Class [] enumRefClasses) throws IOException {
-        
-        this("META-INF/persistence.xml", null, dateTimePatterns, enumRefClasses);
-    }
-
     public JpaContextImpl(
             String persistenceFile, PersistenceURISelector.URIFilter uriFilter, 
             SQLDateTimePatterns dateTimePatterns, Class [] enumRefClasses) 
@@ -67,7 +67,7 @@ public class JpaContextImpl implements JpaContext, Serializable {
         this(new PersistenceURISelector().selectURI(persistenceFile, uriFilter), dateTimePatterns, enumRefClasses);
     }
 
-    public JpaContextImpl(URI persistenceURI, Class [] enumRefClasses) throws IOException { 
+    public JpaContextImpl(URI persistenceURI, Class [] enumRefClasses) { 
         
         this(persistenceURI, new MySQLDateTimePatterns(), enumRefClasses);
     }
@@ -80,19 +80,11 @@ public class JpaContextImpl implements JpaContext, Serializable {
     }
     
     public JpaContextImpl(
-            URI persistenceURI, SQLDateTimePatterns dateTimePatterns, Class [] enumRefClasses) 
-            throws IOException { 
+            URI persistenceURI, SQLDateTimePatterns dateTimePatterns, Class [] enumRefClasses) { 
         
-        if(persistenceURI == null) {
-            throw new NullPointerException();
-        }
-        if(dateTimePatterns == null) {
-            throw new NullPointerException();
-        }
+        this.persistenceConfigURI = Objects.requireNonNull(persistenceURI);
         
-        this.persistenceConfigURI = persistenceURI;
-        
-        this.dateTimePatterns = dateTimePatterns;
+        this.dateTimePatterns = Objects.requireNonNull(dateTimePatterns);
         
         this.metaData = new PersistenceMetaDataImpl(this);        
         
@@ -131,20 +123,32 @@ public class JpaContextImpl implements JpaContext, Serializable {
     }
 
     @Override
-    public <T> QueryBuilder<T> getQueryBuilder(Class<T> resultType) {
-        return this.getQueryBuilder(resultType, resultType);
+    public <T> BuilderForSelect<T> getBuilderForSelect(Class<T> entityAndResultType) {
+        return this.getBuilderForSelect(entityAndResultType, entityAndResultType);
     }
     
     @Override
-    public <T> QueryBuilder<T> getQueryBuilder(Class entityType, Class<T> resultType) {
+    public <T> BuilderForSelect<T> getBuilderForSelect(Class entityType, Class<T> resultType) {
         final EntityManager em = this.getEntityManager(entityType);
-        return new QueryBuilderImpl(em, resultType, this.getDatabaseFormat());
+        BuilderForSelect<T> select = new BuilderForSelectEclipselinkOptimized(em, resultType, this.getDatabaseFormat());
+        select.from(entityType);
+        return select;
     }
-    
+
     @Override
-    public <E> JPQL<E> getJpql(Class<E> entityClass) {
-        JPQLImpl<E> jpql = new JPQLImpl(this, entityClass);
-        return jpql;
+    public <T> BuilderForUpdate<T> getBuilderForUpdate(Class<T> entityType) {
+        final EntityManager em = this.getEntityManager(entityType);
+        BuilderForUpdate<T> update = new BuilderForUpdateImpl(em, entityType, this.getDatabaseFormat());
+        update.from(entityType);
+        return update;
+    }
+
+    @Override
+    public <T> BuilderForDelete<T> getBuilderForDelete(Class<T> entityType) {
+        final EntityManager em = this.getEntityManager(entityType);
+        BuilderForDelete<T> delete = new BuilderForDeleteImpl(em, entityType, this.getDatabaseFormat());
+        delete.from(entityType);
+        return delete;
     }
     
     @Override
@@ -164,7 +168,7 @@ public class JpaContextImpl implements JpaContext, Serializable {
             output = new HashMap(params.size()+1, 1.0f);
             Set keys = params.keySet();
             for(Object key:keys) {
-                Object val = databaseFormat.getDatabaseValue(entityClass, key, params.get(key), NO_VALUE);
+                Object val = databaseFormat.toDatabaseFormat(entityClass, key, params.get(key), NO_VALUE);
                 if(val != NO_VALUE) {
                     output.put(key, val);
                 }
@@ -364,17 +368,17 @@ XLogger.getInstance().log(Level.FINE, "Properties: {0}", this.getClass(), props)
             XLogger.getInstance().log(Level.WARNING, "Exception loading properties for unit: "+persistenceUnit, this.getClass(), e);
         }
 
-        final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+        final ClassLoader originalClassLoader = this.getContextClassLoader();
 
         ClassLoader alternativeClassLoader = null;
 
         try{
 
             if(persistenceConfigURI != null && !persistenceConfigURI.toString().equals("META-INF/persistence.xml")) {
-
-                alternativeClassLoader = new AlternativePersistenceClassLoader(persistenceConfigURI.toURL());
-
-                Thread.currentThread().setContextClassLoader(alternativeClassLoader);
+                
+                alternativeClassLoader = this.getAlternativeClassLoader(originalClassLoader);
+                
+                this.setContextClassLoader(alternativeClassLoader);
             }
 
             if(props != null && !props.isEmpty()) {
@@ -394,11 +398,73 @@ XLogger.getInstance().log(Level.FINE, "Properties: {0}", this.getClass(), props)
 
             if(alternativeClassLoader != null) {
 
-                Thread.currentThread().setContextClassLoader(originalClassLoader);
+                this.setContextClassLoader(originalClassLoader);
             }
         }
     }
+    
+    protected ClassLoader getAlternativeClassLoader(ClassLoader toReplace) 
+            throws MalformedURLException {
+        
+XLogger logger = XLogger.getInstance();
+Level level = Level.FINE;
+Class cls = this.getClass();
+        
+logger.log(level, "ClassLoader to replace. Type: {0}, instance: {1}", cls, toReplace.getClass().getName(), toReplace);
 
+        ClassLoader replacement;
+        if(toReplace instanceof URLClassLoader) {
+            replacement = new AlternativePersistenceURLClassLoader(
+                    persistenceConfigURI.toURL(), (URLClassLoader)toReplace);
+        }else{
+            replacement = new AlternativePersistenceClassLoader(
+                    persistenceConfigURI.toURL(), (URLClassLoader)toReplace);
+        }
+        
+logger.log(level, "Using classloader: {0} to load persistence.xml file", cls, replacement.getClass().getName());
+
+        return replacement;
+    }
+    
+    /**
+     * Wraps <code>Thread.currentThread().setContextClassLoader(ClassLoader)</code> 
+     * into a doPrivileged block if security manager is present
+     */
+    private void setContextClassLoader(final ClassLoader classLoader) {
+        if (System.getSecurityManager() == null) {
+            Thread.currentThread().setContextClassLoader(classLoader);
+        }else {
+            java.security.AccessController.doPrivileged(
+                    new java.security.PrivilegedAction() {
+                        @Override
+                        public java.lang.Object run() {
+                            Thread.currentThread().setContextClassLoader(classLoader);
+                            return classLoader;
+                        }
+                    }
+            );
+        }
+    }
+
+    /**
+     * Wraps <code>Thread.currentThread().getContextClassLoader()</code> 
+     * into a doPrivileged block if security manager is present
+     */
+    private ClassLoader getContextClassLoader() {
+        if (System.getSecurityManager() == null) {
+            return Thread.currentThread().getContextClassLoader();
+        }else {
+            return  (ClassLoader) java.security.AccessController.doPrivileged(
+                    new java.security.PrivilegedAction() {
+                        @Override
+                        public java.lang.Object run() {
+                            return Thread.currentThread().getContextClassLoader();
+                        }
+                    }
+            );
+        }
+    }
+    
     @Override
     public final URI getPersistenceConfigURI() {
         return persistenceConfigURI;

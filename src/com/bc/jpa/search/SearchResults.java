@@ -28,15 +28,16 @@ public interface SearchResults<T> extends Paginated<T>, java.lang.AutoCloseable 
     
     PaginatedList<T> getAllResults();
     
-    List<T> getCurrentBatch();
+    List<T> getCurrentPage();
 
-    List<T> getBatch();
+    List<T> getPage();
 
-    int getBatchIndex();
+    int getPageNumber();
 
+    @Override
     int getSize();
 
-    void setBatchIndex(int pageNumber);
+    void setPageNumber(int pageNumber);
     
     class EmptySearchResults<T> implements SearchResults<T> {
         
@@ -49,22 +50,27 @@ public interface SearchResults<T> extends Paginated<T>, java.lang.AutoCloseable 
         public void close() { }
 
         @Override
+        public T get(int index) {
+            return (T)PaginatedList.EMPTY_PAGINATED_LIST.get(index);
+        }
+
+        @Override
         public PaginatedList<T> getAllResults() {
             return PaginatedList.EMPTY_PAGINATED_LIST;
         }
 
         @Override
-        public List getCurrentBatch() {
-            return this.getBatch();
+        public List getCurrentPage() {
+            return this.getPage();
         }
 
         @Override
-        public List getBatch() {
-            return this.getBatch(this.getBatchIndex());
+        public List getPage() {
+            return this.getPage(this.getPageNumber());
         }
 
         @Override
-        public int getBatchIndex() {
+        public int getPageNumber() {
             return 0;
         }
 
@@ -74,23 +80,23 @@ public interface SearchResults<T> extends Paginated<T>, java.lang.AutoCloseable 
         }
 
         @Override
-        public void setBatchIndex(int pageNumber) {
+        public void setPageNumber(int pageNumber) {
             throw new IndexOutOfBoundsException("0 elements available. Index out of bounds. Page: "+pageNumber);
         }
 
         @Override
-        public List getBatch(int pageNum) {
-            return PaginatedList.EMPTY_PAGINATED_LIST.getBatch(pageNum);
+        public List getPage(int pageNum) {
+            return PaginatedList.EMPTY_PAGINATED_LIST.getPage(pageNum);
         }
 
         @Override
-        public int getBatchCount() {
-            return PaginatedList.EMPTY_PAGINATED_LIST.getBatchCount();
+        public int getPageCount() {
+            return PaginatedList.EMPTY_PAGINATED_LIST.getPageCount();
         }
 
         @Override
-        public int getBatchSize() {
-            return PaginatedList.EMPTY_PAGINATED_LIST.getBatchSize();
+        public int getPageSize() {
+            return PaginatedList.EMPTY_PAGINATED_LIST.getPageSize();
         }
     }
 }

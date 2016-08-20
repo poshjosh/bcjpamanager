@@ -1,9 +1,10 @@
 package com.bc.jpa.query;
 
+import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.jpa.JpaContext;
 import com.bc.jpa.TestApp;
-import static com.bc.jpa.query.QueryBuilderTestBase.ENTITY_TYPE;
-import static com.bc.jpa.query.QueryBuilderTestBase.SELECTED_PRODUCTID;
+import static com.bc.jpa.query.TestBaseForJpaQuery.ENTITY_TYPE;
+import static com.bc.jpa.query.TestBaseForJpaQuery.SELECTED_PRODUCTID;
 import com.looseboxes.pu.entities.Product;
 import java.util.Arrays;
 import java.util.List;
@@ -15,15 +16,15 @@ import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
-import static junit.framework.Assert.assertTrue;
 import org.junit.Test;
+import static junit.framework.Assert.assertTrue;
 
 /**
  * @author Josh
  */
-public class QueryBuilderImplTest_1 extends QueryBuilderTestBase {
+public class QueryBuilderImplTest_SearchVsLike extends TestBaseForJpaQuery {
     
-    public QueryBuilderImplTest_1(String testName) {
+    public QueryBuilderImplTest_SearchVsLike(String testName) {
         super(testName);
     }
     
@@ -41,15 +42,15 @@ System.out.println("#testSearchAndWhereGreaterOrEquals_3 modes");
         
 System.out.println("MODE 1: QueryBuilder#where(String[], LIKE, ?, OR)");            
         List<Object[]> results0;
-        try(QueryBuilder<Object[]> instance = createQueryBuilder(Object[].class)) {
+        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
         
-            TypedQuery<Object[]> tq = instance.forType(ENTITY_TYPE)
+            TypedQuery<Object[]> tq = instance.from(ENTITY_TYPE)
                     .select(colsToSelect)
-                    .where(colsToSearch, QueryBuilder.LIKE, queryExpression, QueryBuilder.OR)
+                    .where(colsToSearch, BuilderForSelect.LIKE, queryExpression, BuilderForSelect.OR)
                     .and()
-                    .where(ID_COL, QueryBuilder.GREATER_OR_EQUALS, ID_VAL)
+                    .where(ID_COL, BuilderForSelect.GREATER_OR_EQUALS, ID_VAL)
                     .descOrder(ID_COL)
-                    .build();
+                    .createQuery();
             
             results0 = tq.getResultList();
 this.printResults(results0, true);
@@ -57,15 +58,15 @@ this.printResults(results0, true);
 
 System.out.println("MODE 2: QueryBuilder#search(String[], ?)");            
         List<Object[]> results1;
-        try(QueryBuilder<Object[]> instance = createQueryBuilder(Object[].class)) {
+        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
         
-            TypedQuery<Object[]> tq1 = instance.forType(ENTITY_TYPE)
+            TypedQuery<Object[]> tq1 = instance.from(ENTITY_TYPE)
                     .select(colsToSelect)
                     .search(query, colsToSearch)
                     .and()
-                    .where(ID_COL, QueryBuilder.GREATER_OR_EQUALS, ID_VAL)
+                    .where(ID_COL, BuilderForSelect.GREATER_OR_EQUALS, ID_VAL)
                     .descOrder(ID_COL)
-                    .build();
+                    .createQuery();
             
             results1 = tq1.getResultList();
 this.printResults(results1, true);

@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -42,9 +43,9 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
             JpaContext ctx, 
             Class<E> entityClass) {
     
-        this.jpaContext = ctx;
+        this.jpaContext = Objects.requireNonNull(ctx);
         
-        this.entityClass = entityClass;
+        this.entityClass = Objects.requireNonNull(entityClass);
     }
 
     @Override
@@ -57,15 +58,6 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
         return getEntityManagerFactory().createEntityManager();
     }
     
-    /**
-     * Simply throws UnsupportedOperationException
-     * @deprecated 
-     */
-    @Override
-    public boolean execute(String query) {
-        throw new UnsupportedOperationException("Use #executeUpdate or #executeQuery");
-    }
-
     /**
      * Simply throws UnsupportedOperationException
      * @deprecated 

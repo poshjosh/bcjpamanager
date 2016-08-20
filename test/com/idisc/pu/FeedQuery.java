@@ -6,14 +6,14 @@ import com.bc.jpa.JpaContext;
 /**
  * @author Josh
  */
-public class FeedQuery extends Query<Feed> {
+public class FeedQuery extends SearchQueryBuilder<Feed> {
 
-    public FeedQuery(JpaContext cf, String query) {
-        this(cf, -1, -1, query);
+    public FeedQuery(JpaContext jpaContext, String query) {
+        this(jpaContext, -1, -1, query);
     }
     
-    public FeedQuery(JpaContext cf, int offset, int limit, String query) {
+    public FeedQuery(JpaContext jpaContext, int offset, int limit, String query) {
         
-        super(cf, Feed.class, offset, limit, query, "title", "keywords", "description", "content");
+        super(jpaContext, Feed.class, offset, limit, query, "title", "keywords", "description", "content");
     }
 }

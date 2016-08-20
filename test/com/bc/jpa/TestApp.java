@@ -50,7 +50,9 @@ System.out.println(TestApp.class.getName()+"<init>");
                     persistenceFile, new MySQLDateTimePatterns(), enumRefClasses);
             
             PersistenceMetaData metaData = jpaContext.getMetaData();
+            
             String [] puNames = metaData.getPersistenceUnitNames();
+            
 System.out.println(TestCase.class.getName()+" "+Arrays.toString(puNames));
             for(String puName:puNames) {
 System.out.println(puName+" = "+Arrays.toString(metaData.getEntityClasses(puName))); 

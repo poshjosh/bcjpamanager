@@ -25,26 +25,38 @@ public interface Paginated<T> {
      */
     void reset();
     
-    List<T> getBatch(int pageNum);
+    int getSize();
+    
+    T get(int index);
+    
+    List<T> getPage(int pageNum);
 
-    int getBatchCount();
+    int getPageCount();
 
-    int getBatchSize();
+    int getPageSize();
     
     class EmptyPages<T> implements Paginated<T> {
         private EmptyPages() { }
         @Override
         public void reset() { }
         @Override
-        public List getBatch(int pageNum) {
-            throw new IndexOutOfBoundsException("page: "+pageNum);
+        public T get(int index) {
+            throw new IndexOutOfBoundsException("index: "+index);
         }
         @Override
-        public int getBatchCount() {
+        public int getSize() {
             return 0;
         }
         @Override
-        public int getBatchSize() {
+        public List<T> getPage(int pageNum) {
+            throw new IndexOutOfBoundsException("page: "+pageNum);
+        }
+        @Override
+        public int getPageCount() {
+            return 0;
+        }
+        @Override
+        public int getPageSize() {
             return 20;
         }
     }

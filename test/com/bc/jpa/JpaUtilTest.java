@@ -1,6 +1,5 @@
 package com.bc.jpa;
 
-import com.bc.jpa.query.QueryBuilder;
 import com.bc.jpa.util.EntityMapBuilderImpl;
 import com.bc.util.JsonBuilder;
 import com.idisc.pu.entities.Archivedfeed;
@@ -15,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import javax.persistence.TypedQuery;
 import junit.framework.TestCase;
+import com.bc.jpa.dao.BuilderForSelect;
 
 /**
  * @author Josh
@@ -117,9 +117,9 @@ public class JpaUtilTest extends TestCase {
         
         JpaContext jpaContext = TestApp.getInstance().getIdiscJpaContext();
         
-        QueryBuilder<Feed> qb = jpaContext.getQueryBuilder(Feed.class);
+        BuilderForSelect<Feed> qb = jpaContext.getBuilderForSelect(Feed.class);
         
-        TypedQuery<Feed> tq = qb.descOrder(Feed.class, "feedid").build();
+        TypedQuery<Feed> tq = qb.descOrder(Feed.class, "feedid").createQuery();
         
         tq.setFirstResult(0).setMaxResults(20);
         
