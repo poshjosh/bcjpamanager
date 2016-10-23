@@ -79,7 +79,7 @@ public class RelatedEntityController extends DefaultEntityController {
     private EntityController getDelegate() {
         EntityController controller;
         Class entityClass = this.getEntityClass();
-        PersistenceMetaData metaData = this.getMetaData();
+        JpaMetaData metaData = this.getMetaData();
         boolean isReference = metaData.getReferencingClasses(
                 entityClass) != null;
         boolean isReferencing = metaData.getReferenceClasses(

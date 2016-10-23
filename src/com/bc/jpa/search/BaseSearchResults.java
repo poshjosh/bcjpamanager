@@ -1,6 +1,7 @@
 package com.bc.jpa.search;
 
-import com.bc.jpa.dao.BuilderForSelect;
+import com.bc.jpa.JpaContext;
+import com.bc.jpa.dao.SelectDao;
 
 /**
  * @(#)ParamSearchResults.java   25-Apr-2015 22:45:02
@@ -16,31 +17,37 @@ import com.bc.jpa.dao.BuilderForSelect;
  * @version  2.0
  * @since    2.0
  */
-public class BaseSearchResults<R> extends QuerySearchResults<R> {
+public class BaseSearchResults<R> extends QuerySearchResults<R> implements AutoCloseable {
     
-    private transient final BuilderForSelect<R> select;
+    private transient final SelectDao<R> select;
+
+    public BaseSearchResults(JpaContext jpaContext, Class<R> entityType) {
+        this(jpaContext.getBuilderForSelect(entityType));
+    }
     
-    public BaseSearchResults(BuilderForSelect<R> select) {
+    public BaseSearchResults(JpaContext jpaContext, Class<R> entityType, int batchSize, boolean useCache) {
+        this(jpaContext.getBuilderForSelect(entityType), batchSize, useCache);
+    }
+    
+    public BaseSearchResults(SelectDao<R> select) {
         super(select.createQuery());
         this.select = select;
     }
     
     public BaseSearchResults(
-            BuilderForSelect<R> select, int batchSize, boolean useCache) { 
+            SelectDao<R> select, int batchSize, boolean useCache) { 
         super(select.createQuery(), batchSize, useCache);
         this.select = select;
-        
     }
     
     @Override
     public void close() {
-        super.close();
         if(this.select != null && this.select.isOpen()) {
             this.select.close();
         }
     }
 
-    public final BuilderForSelect<R> getSelect() {
+    public final SelectDao<R> getSelect() {
         return select;
     }
 }

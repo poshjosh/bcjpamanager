@@ -1,7 +1,17 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2016 NUROX Ltd.
+ *
+ * Licensed under the NUROX Ltd Software License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.looseboxes.com/legal/licenses/software.html
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.idisc.pu.entities;
@@ -28,7 +38,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on Aug 13, 2016 10:53:11 PM
+ * @author Chinomso Bassey Ikwuagwu on Oct 3, 2016 5:25:25 PM
  */
 @Entity
 @Table(name = "site")
@@ -71,6 +81,12 @@ public class Site implements Serializable {
     @JoinColumn(name = "sitetypeid", referencedColumnName = "sitetypeid")
     @ManyToOne(optional = false)
     private Sitetype sitetypeid;
+    @JoinColumn(name = "countryid", referencedColumnName = "countryid")
+    @ManyToOne
+    private Country countryid;
+    @JoinColumn(name = "timezoneid", referencedColumnName = "timezoneid")
+    @ManyToOne(optional = false)
+    private Timezone timezoneid;
 
     public Site() {
     }
@@ -158,6 +174,22 @@ public class Site implements Serializable {
 
     public void setSitetypeid(Sitetype sitetypeid) {
         this.sitetypeid = sitetypeid;
+    }
+
+    public Country getCountryid() {
+        return countryid;
+    }
+
+    public void setCountryid(Country countryid) {
+        this.countryid = countryid;
+    }
+
+    public Timezone getTimezoneid() {
+        return timezoneid;
+    }
+
+    public void setTimezoneid(Timezone timezoneid) {
+        this.timezoneid = timezoneid;
     }
 
     @Override

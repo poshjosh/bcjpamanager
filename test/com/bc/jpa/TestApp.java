@@ -49,7 +49,7 @@ System.out.println(TestApp.class.getName()+"<init>");
             final JpaContext jpaContext = new JpaContextImpl(
                     persistenceFile, new MySQLDateTimePatterns(), enumRefClasses);
             
-            PersistenceMetaData metaData = jpaContext.getMetaData();
+            JpaMetaData metaData = jpaContext.getMetaData();
             
             String [] puNames = metaData.getPersistenceUnitNames();
             

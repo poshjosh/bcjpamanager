@@ -64,17 +64,8 @@ public class QuerySearchResults<T>
         this.pageNumber = 0;
     }
     
-    /**
-     * Releases valuable resources. Overriding methods must call super.close()
-     */
     @Override
-    public void close() {
-        super.close();
-        this.pageNumber = 0;
-    }
-
-    @Override
-    public PaginatedList<T> getAllResults() {
+    public PaginatedList<T> getPages() {
         return new PaginatedListImpl(this);
     }
     
@@ -101,7 +92,7 @@ public class QuerySearchResults<T>
     @Override
     public void setPageNumber(int pageNumber) {
         if(pageNumber > this.getPageCount()-1) {
-            throw new ArrayIndexOutOfBoundsException(pageNumber+" > "+this.getPageCount());
+            throw new ArrayIndexOutOfBoundsException(pageNumber+" >= "+this.getPageCount());
         }
         this.pageNumber = pageNumber;
     }

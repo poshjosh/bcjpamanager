@@ -36,15 +36,12 @@ XLogger.getInstance().log(Level.FINE, "Random Search Results: {0}", this.getClas
     public void reset() { }
     
     @Override
-    public void close() { }
-
-    @Override
     public T get(int index) {
         return results.get(index);
     }
 
     @Override
-    public PaginatedList<T> getAllResults() {
+    public PaginatedList<T> getPages() {
         return new ListPager(results, results.size());
     }
 

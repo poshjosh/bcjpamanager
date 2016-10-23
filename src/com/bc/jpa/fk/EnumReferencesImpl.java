@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import com.bc.jpa.PersistenceMetaData;
 import com.bc.jpa.JpaContext;
+import com.bc.jpa.JpaMetaData;
 
 /**
  * @(#)AbstractEnumReferences.java   15-May-2015 08:27:29
@@ -59,7 +59,7 @@ public class EnumReferencesImpl<E> implements Serializable, EnumReferences<E> {
         
     @Override
     public EntityController<E, ?> getEntityController(String tablename) {
-        PersistenceMetaData metaData = jpaContext.getMetaData();
+        JpaMetaData metaData = jpaContext.getMetaData();
         Class entityClass = metaData.findEntityClass(tablename);
         if(entityClass == null) {
             throw new IllegalArgumentException("For table: "+tablename+", no entity class was specified in persistence config: "+this.jpaContext.getPersistenceConfigURI());
@@ -103,7 +103,7 @@ XLogger xlog = XLogger.getInstance();
 
         Class matchingType = null;
         
-        PersistenceMetaData metaData = this.jpaContext.getMetaData();
+        JpaMetaData metaData = this.jpaContext.getMetaData();
         
         outer:
         for(Class enumType:enumTypes) {

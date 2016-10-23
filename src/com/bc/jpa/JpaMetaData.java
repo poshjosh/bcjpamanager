@@ -20,7 +20,14 @@ import javax.persistence.TemporalType;
  * @version  2.0
  * @since    2.0
  */
-public interface PersistenceMetaData {
+public interface JpaMetaData {
+
+    public static final int TABLE_NAME = 3;
+    public static final int COLUMN_NAME = 4;
+    public static final int COLUMN_DATA_TYPE = 5;
+    public static final int COLUMN_TYPE_NAME = 6;
+    public static final int COLUMN_SIZE = 7;
+    public static final int COLUMN_NULLABLE = 11;
 
     /**
      * @return The URI to the persistence.xml data
@@ -56,8 +63,10 @@ public interface PersistenceMetaData {
     String [] getColumnNames(Class entityClass);
     
     int [] getColumnDisplaySizes(Class entityClass);
+
+    int [] getColumnDataTypes(Class entityClass);
     
-    int [] getNullables(Class entityClass);
+    int [] getColumnNullables(Class entityClass);
     
     int getColumnIndex(Class entityClass, String column);
         

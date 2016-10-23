@@ -5,13 +5,19 @@ import com.bc.util.XLogger;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Level;
 import javax.persistence.Entity;
 
@@ -26,53 +32,62 @@ public class EntityMapBuilderImpl implements EntityMapBuilder {
     
     private final int maxCollectionSize;
     
-    private final Collection<Class> builtTypes;
+    private final Set<Class> builtTypes;
     
-    private final Collection<Class> typesToAccept;
+    private final Set<Class> typesToAccept;
     
-    private final Collection<Class> typesToIgnore;
+    private final Set<Class> typesToIgnore;
     
-    private int depth = 0;
-
+    private final Map<Class, Method []> entityToMethods;
+    
     public EntityMapBuilderImpl() {
         
         this(null, null);
     }
 
-    public EntityMapBuilderImpl(Collection<Class> typesToAccept, Collection<Class> typesToIgnore) {
+    public EntityMapBuilderImpl(Set<Class> typesToAccept, Set<Class> typesToIgnore) {
         
         this(false, 3, 100, typesToAccept, typesToIgnore);
     }
 
     public EntityMapBuilderImpl(
+            boolean nullsAllowed, int maxDepth, int maxCollectionSize) {
+        
+        this(nullsAllowed, maxDepth, maxCollectionSize, null, null);
+    }
+    
+    public EntityMapBuilderImpl(
             boolean nullsAllowed, int maxDepth, int maxCollectionSize, 
-            Collection<Class> typesToAccept, Collection<Class> typesToIgnore) {
+            Set<Class> typesToAccept, Set<Class> typesToIgnore) {
         this.nullsAllowed = nullsAllowed;
         this.maxDepth = maxDepth;
         this.maxCollectionSize = maxCollectionSize;
-        this.builtTypes = new ArrayList();
-        this.typesToAccept = typesToAccept == null ? Collections.EMPTY_LIST : typesToAccept;
-        this.typesToIgnore = typesToIgnore == null ? Collections.EMPTY_LIST : typesToIgnore;
-    }
-
-    @Override
-    public void reset() {
-        this.builtTypes.clear();
-        this.depth = 0;
-    }
-
-    @Override
-    public Map build(Object entity) {
-        
-        return this.build(entity, entity.getClass());
+        this.builtTypes = new HashSet();
+        this.typesToAccept = typesToAccept == null || typesToAccept.isEmpty() ? 
+                Collections.EMPTY_SET : Collections.unmodifiableSet(typesToAccept);
+        this.typesToIgnore = typesToIgnore == null || typesToIgnore.isEmpty() ? 
+                Collections.EMPTY_SET : Collections.unmodifiableSet(typesToIgnore);
+        this.entityToMethods = new HashMap<>();
     }
     
     @Override
-    public Map build(Object entity, Class entityType) {
+    public Map build(Object entity) {
+        
+        return this.build(entity.getClass(), entity);
+    }
+
+    @Override
+    public Map build(Class entityType, Object entity) {
+        
+        return this.build(entityType, entity, Transformer.NO_OPERATION);
+    }
+    
+    @Override
+    public <E> Map build(Class<E> entityType, E entity, Transformer<E> transformer) {
         
         Map appendTo = new LinkedHashMap();
         
-        this.build(entity, entityType, appendTo);
+        this.build(entityType, entity, appendTo, transformer);
         
         return appendTo;
     }
@@ -80,205 +95,281 @@ public class EntityMapBuilderImpl implements EntityMapBuilder {
     @Override
     public void build(Object entity, Map appendTo) {
      
-        this.build(entity, entity.getClass(), appendTo);
+        this.build(entity.getClass(), entity, appendTo);
     }
 
     @Override
-    public void build(Object entity, Class entityType, Map appendTo) {
+    public void build(Class entityType, Object entity, Map appendTo) {
         
-        build(true, entity, entityType, appendTo);
+        build(entityType, entity, appendTo, Transformer.NO_OPERATION);
+    }
+    
+    @Override
+    public <E> void build(Class<E> entityType, E entity, Map appendTo, Transformer<E> transformer) {
+        
+        this.builtTypes.clear();
+        
+        this.build(entityType, entity, appendTo, transformer, 0);
     }
 
-    private void build(boolean log, Object entity, Class entityType, Map appendTo) {
-        
-        if(log) {
-            
-            builtTypes.add(entityType);
-        }
+    private <E> void build(Class<E> entityType, E entity, Map appendTo, Transformer<E> transformer, int depth) {
         
 XLogger logger = XLogger.getInstance();
 Level level = Level.FINER;
 Class cls = this.getClass();
 
-logger.log(level, "toMap. Entity: {0}", cls, entity);
-        
-        if(entity==null) {
-            throw new NullPointerException();
-        }
+logger.log(level, "Building Map for entity: {0}", cls, entity);
 
-        Method [] methods = entityType.getMethods();
+        Objects.requireNonNull(entity);
+
+        builtTypes.add(entityType);
+        
+        Method [] methods = this.getMethods(entityType);
         
         StringBuilder buff = new StringBuilder();
         
         for(Method method:methods) {
             
             buff.setLength(0);
-            
             JpaUtil.appendColumnName(false, method, buff);
-            String columnName = buff.length() == 0 ? null : buff.toString();
-            if(columnName == null) {
+            String key = buff.length() == 0 ? null : buff.toString();
+            
+            boolean foundGetterMethod = key != null;
+            
+            if(!foundGetterMethod) {
+logger.log(level, "Not a getter method: {0}", cls, method.getName());                
                 continue;
             }
             
-            try{
+            if(!this.mayRecurse(logger, level, method, depth)) {
+                continue;
+            }
+            
+            Object value;
+            if(this.maxCollectionSize < 1 && 
+                    this.isSubclassOf(method.getReturnType(), Collection.class)) {
+//System.out.println("-------------------------------------------- key: "+key+", return type: "+method.getReturnType());                
+                value = null;
                 
-                Object columnValue = method.invoke(entity);
-                if(!nullsAllowed && columnValue == null) {
+            }else{
+                
+                try{
+
+                    value = method.invoke(entity);
+
+                }catch(IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+
+                    this.logMethodError(logger, cls, e, entity, method, key);
+
                     continue;
                 }
-                
-                if(columnValue != null && maxDepth > 0) {
-                    
-                    if(columnValue instanceof Collection) {
+            }
+
+            if(transformer != null) {
+                final String oldKey = key;
+                key = transformer.transformKey(entity, key);
+                value = transformer.transformValue(entity, oldKey, key, value);
+            }
+
+            if(!nullsAllowed && value == null) {
+                continue;
+            }
+            
+            if(maxDepth > 0) {
+
+                if(value instanceof Collection) {
+
+                    Collection collection = (Collection)value;
+
+                    if(collection.size() > maxCollectionSize) {
+
+                        collection = this.truncate(collection, maxCollectionSize);
+
+                        value = collection;
+                    }
+
+                    if(collection.isEmpty()) {
                         
-                        Collection collection = (Collection)columnValue;
+logger.log(level, "{0} is an empty collection", cls, key);
+
+                        value = null;
                         
-                        if(collection.size() > maxCollectionSize) {
-                            
-                            collection = this.truncate(collection, maxCollectionSize);
-                            
-                            columnValue = collection;
-                        }
-                        
-                        final Class subType = this.getEntityType(collection);
-                        
-if(logger.isLoggable(level, cls))                        
-logger.log(level, "{0} has generic type {1}", cls, columnName, subType==null?null:subType.getName());
-
-                        if(subType != null) {
-                            
-                            if(this.mayRecurse(logger, subType)) {
-                                
-                                List list = new ArrayList();
-
-logger.log(level, "Recursing list with columnName: {0} and {1} values", 
-        cls, columnName, collection.size());
-
-                                Iterator iter = collection.iterator();
-                                
-                                ++depth;
-                                
-                                while(iter.hasNext()) {
-                                    
-                                    Object subValue = iter.next();
-
-                                    Map subMap = new LinkedHashMap();
-                                    
-                                    build(!iter.hasNext(), subValue, subType, subMap);
-
-                                    list.add(subMap);
-                                }
-                                
-                                --depth;
-
-                                columnValue = list;
-                                
-                            }else{
-                                
-                                columnValue = Collections.EMPTY_LIST;
-                            }
-                        }
                     }else{
+                    
+                        final Class collectionValueType = this.getTypeOfGenericReturnTypesArgument(method);
+
+logger.log(level, "{0} has generic type {1}", cls, key, collectionValueType);                      
                         
-                        Annotation entityAnnotation = this.getEntityAnnotation(columnValue);
+                        List list = new ArrayList();
 
-                        if(entityAnnotation != null) {
+logger.log(level, "Recursing collection: {0} and {1} values", cls, key, collection.size());
 
-logger.log(level, "Recursing value with columnName: {0}", cls, columnName);  
+                        Iterator iter = collection.iterator();
 
-                            Class columnType = columnValue.getClass();
-                            
-                            if(this.mayRecurse(logger, columnType)) {
+                        ++depth;
 
-                                ++depth;
-                                
-                                Map columnMap = build(columnValue, columnType);
-                                
-                                --depth;
-                                
-                                columnValue = columnMap;
-                                
-                            }else{
-                                
-                                columnValue = null;
-                            }
+                        while(iter.hasNext()) {
+
+                            Object subValue = iter.next();
+
+                            Map subMap = new LinkedHashMap();
+
+                            build(collectionValueType, subValue, subMap, Transformer.NO_OPERATION, depth);
+
+                            list.add(subMap);
                         }
+
+                        --depth;
+
+                        value = list;
+                    }
+                }else if(value != null){
+
+                    final Class valueType = value.getClass();
+
+                    Annotation entityAnnotation = valueType.getAnnotation(Entity.class);
+
+logger.log(level, "Key: {0}, value type: {1}, entity annotation: {2}", 
+    cls, key, valueType, entityAnnotation); 
+
+                    if(entityAnnotation != null) {
+                        
+logger.log(level, "Recursing value with key: {0}", cls, key);  
+
+                        ++depth;
+
+                        Map valueMap = new LinkedHashMap();
+                        
+                        build(valueType, value, valueMap, Transformer.NO_OPERATION, depth);
+
+                        --depth;
+
+                        value = valueMap;
                     }
                 }
-                
-                if(columnValue != null) {
-                
-                    appendTo.put(columnName, columnValue);
-                }
-                
-            }catch(IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                StringBuilder msg = new StringBuilder();
-                msg.append("Entity: ").append(entity);
-                msg.append(", Method: ").append(method.getName());
-                msg.append(", Column: ").append(columnName);
-                logger.log(Level.WARNING, msg.toString(), cls, e);
+            }
+
+            if(nullsAllowed || value != null) {
+
+                this.append(entityType, entity, key, value, appendTo);
             }
         }
-if(logger.isLoggable(Level.FINER, cls))        
-logger.log(Level.FINER, "Extracted: {0}", cls, appendTo.keySet());     
+if(logger.isLoggable(level, cls))        
+logger.log(level, "Extracted: {0}", cls, appendTo.keySet());     
     }
     
-    private Collection truncate(Collection collection, int maxSize) {
+    protected <E> void append(Class<E> entityType, E entity, String key, Object value, Map appendTo) {
         
-        Collection output = new ArrayList(maxSize);
+        appendTo.put(key, value);
+    }
+    
+    Collection truncate(Collection collection, int maxSize) {
         
-        int i = 0;
+        Collection output;
         
-        for(Object object:collection) {
-         
-            output.add(object);
+        if(maxSize < 1) {
             
-            if(++i >= maxSize) {
-                break;
+            output = Collections.EMPTY_SET;
+            
+        }else{
+            
+            output = new ArrayList(maxSize);
+            
+            int i = 0;
+
+            for(Object object:collection) {
+
+                output.add(object);
+
+                if(++i >= maxSize) {
+                    break;
+                }
             }
-        }
+        }    
         
         return output;
     }
     
-    private Class getEntityType(Collection collection) {
+    boolean mayRecurse(XLogger log, Level level, Method method, int depth) {
         
-        Iterator iter = collection.iterator();
-
-        Class output = null;
+        final Class returnType = method.getReturnType();
         
-        if(iter.hasNext()) {
-            Object subValue = iter.next();
-            Annotation entityAnnotation = this.getEntityAnnotation(subValue);
-            output = entityAnnotation == null ? null : subValue.getClass();
+        final boolean collectionReturnType = this.isSubclassOf(returnType, Collection.class);
+        
+        final Class type;
+        if(!collectionReturnType) {
+            type = returnType;
+        }else{
+            type = this.getTypeOfGenericReturnTypesArgument(method);
         }
-
-        return output;
+        
+        return this.mayRecurse(log, level, type, depth);
     }
     
-    private boolean mayRecurse(XLogger log, Class type) {
+    Class getTypeOfGenericReturnTypesArgument(Method method) {
+        final Type genericReturnType = method.getGenericReturnType();
+        ParameterizedType parameterizedType = (ParameterizedType)genericReturnType;
+        Type [] typeArg = parameterizedType.getActualTypeArguments();
+        return (Class)typeArg[0];
+    }
+    
+    boolean mayRecurse(XLogger log, Level level, Class type, int depth) {
         
-if(log.isLoggable(Level.FINER, this.getClass()))
-log.log(Level.FINER, "{0}, depth < maxDepth: {1}, !typesToIgnore.contains(type): {2}, !builtTypes.contains(type): {3}", 
+if(log.isLoggable(level, this.getClass()))
+log.log(level, "{0}, depth < maxDepth: {1}, !typesToIgnore.contains(type): {2}, !builtTypes.contains(type): {3}", 
 this.getClass(), type.getName(), (depth<maxDepth), !typesToIgnore.contains(type), !builtTypes.contains(type));
 
         return depth < maxDepth  && !builtTypes.contains(type) 
                 && (typesToAccept.contains(type) || (typesToAccept.isEmpty() && !typesToIgnore.contains(type)));
     }
     
-    private Annotation getEntityAnnotation(Object object) {
-        
-        Annotation entityAnn;
-        
-        if(object == null) {
-            
-            entityAnn = null;
-            
-        }else{
-            
-            entityAnn = object.getClass().getAnnotation(Entity.class);
+    boolean isSubclassOf(Class tgt, Class cls) {
+        try{
+            tgt.asSubclass(cls);
+            return true;
+        }catch(ClassCastException ignored) {
+            return false;
         }
-        
-        return entityAnn;
+    }
+    
+    Method [] getMethods(Class entityType) {
+        Method [] output = entityToMethods.get(entityType);
+        if(output == null) {
+            output = entityType.getMethods();
+            entityToMethods.put(entityType, output);
+        }
+        return output;
+    }
+    
+    void logMethodError(XLogger logger, Class cls, Exception e, Object entity, Method method, String key) {
+        StringBuilder msg = new StringBuilder();
+        msg.append("Entity: ").append(entity);
+        msg.append(", Method: ").append(method.getName());
+        msg.append(", key: ").append(key);
+        logger.log(Level.WARNING, msg.toString(), cls, e);
+    }
+
+    public final boolean isNullsAllowed() {
+        return nullsAllowed;
+    }
+
+    public final int getMaxDepth() {
+        return maxDepth;
+    }
+
+    public final int getMaxCollectionSize() {
+        return maxCollectionSize;
+    }
+
+    public final Set<Class> getBuiltTypes() {
+        return builtTypes;
+    }
+
+    public final Set<Class> getTypesToAccept() {
+        return typesToAccept;
+    }
+
+    public final Set<Class> getTypesToIgnore() {
+        return typesToIgnore;
     }
 }

@@ -56,7 +56,7 @@ public interface EntityControllerBase<E, e> {
     
     EntityManagerFactory getEntityManagerFactory();
     
-    PersistenceMetaData getMetaData();
+    JpaMetaData getMetaData();
 
     /**
      * @param entity Entity whose Id is to be returned

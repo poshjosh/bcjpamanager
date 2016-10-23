@@ -6,13 +6,13 @@ import com.bc.jpa.JpaContext;
 /**
  * @author Josh
  */
-public class CommentQuery extends SearchQueryBuilder<Comment> {
+public class CommentDao extends SearchDao<Comment> {
     
-    public CommentQuery(JpaContext cf, String query) {
+    public CommentDao(JpaContext cf, String query) {
         this(cf, -1, -1, query);
     }
     
-    public CommentQuery(JpaContext cf, int offset, int limit, String query) {
+    public CommentDao(JpaContext cf, int offset, int limit, String query) {
         
         super(cf, Comment.class, offset, limit, query, "commentSubject", "commentText");
     }

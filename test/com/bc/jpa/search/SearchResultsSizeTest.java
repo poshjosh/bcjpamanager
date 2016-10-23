@@ -33,15 +33,13 @@ public class SearchResultsSizeTest extends SearchResultsTestBase {
     @Test
     public void testSize() {
         
-        
-        
-        try(SearchResults<Product> searchresults = 
+        try(BaseSearchResults<Product> searchresults = 
                 this.createInstance(TestApp.getInstance().getLbJpaContext(), 
                 Product.class, Product.class, "1 year", 100, true)) {
 
-System.out.println("==================================Size: "+searchresults.getAllResults().size());             
+System.out.println("==================================Size: "+searchresults.getPages().size());             
 System.out.println("==================================Size: "+searchresults.getSize()); 
-            List<Product> found = searchresults.getAllResults();
+            List<Product> found = searchresults.getPages();
             for(Product product:found) {
 System.out.println(product.getProductid()+"="+product.getProductName());                
             }

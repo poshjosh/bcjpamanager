@@ -1,24 +1,25 @@
 package com.bc.jpa;
 
 import com.bc.jpa.dom.PersistenceDOM;
+import com.bc.util.IntegerArray;
 import com.bc.util.XLogger;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
-import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -44,8 +45,7 @@ import javax.persistence.TemporalType;
  * @version  2.0
  * @since    2.0
  */
-public class PersistenceMetaDataImpl 
-        implements PersistenceMetaData, Serializable {
+public class JpaMetaDataImpl implements JpaMetaData, Serializable {
     
     private List<String> puNames;
     
@@ -66,7 +66,7 @@ public class PersistenceMetaDataImpl
     
     private transient final JpaContext jpaContext;
 
-    public PersistenceMetaDataImpl(JpaContext jpaContext) { 
+    public JpaMetaDataImpl(JpaContext jpaContext) { 
         
 XLogger logger = XLogger.getInstance();
 Level level = Level.FINE;
@@ -424,7 +424,7 @@ if(logger.isLoggable(level, cls)) {
     @Override
     public Class getEntityClass(String database, String table) {
         Class entityClass = null;
-        int index = this.indexOf(database);
+        int index = this.indexOfDatabase(database);
         if(index != -1) {
             List<Class> dbClasses = this.classes.get(index);
             for(Class dbClass:dbClasses) {
@@ -524,101 +524,64 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
         return columnIndex;
     }
 
+    private transient WeakReference<Map<Class, String[]>> _$columnNamesMap;
     @Override
     public String [] getColumnNames(Class entityClass) {
-        ArrayList<String> cols = new ArrayList<>();
-        Field [] fields = entityClass.getDeclaredFields();
-        for(Field field:fields) {
-            String col = null;
-            Column colAnn = field.getAnnotation(Column.class);
-            if(colAnn != null) {
-                col = colAnn.name();
-            }else{
-                JoinColumn joinColAnn = field.getAnnotation(JoinColumn.class);
-                if(joinColAnn != null) {
-                    col = joinColAnn.name();
-                }
-            }
-            if(col != null) {
-                cols.add(col);
-            }
+        
+        Map<Class, String[]> columnNamesMap;
+        
+        if(_$columnNamesMap == null || _$columnNamesMap.get() == null) {
+            columnNamesMap = new HashMap<>();
+            _$columnNamesMap = new WeakReference(columnNamesMap);
+        }else{
+            columnNamesMap = _$columnNamesMap.get();
         }
-        return cols.toArray(new String[0]);
+        
+        String [] output = columnNamesMap.get(entityClass);
+        
+        if(output == null) {
+            
+            try{
+                output = this.fetchStringMetaData(entityClass, COLUMN_NAME);
+            }catch(SQLException e) {
+                XLogger.getInstance().log(Level.WARNING, "Unexpected exception", this.getClass(), e);
+                output = new String[0];
+            }
+            
+            columnNamesMap.put(entityClass, output);
+        }
+        
+        return output;
     }
 
     @Override
     public int [] getColumnDisplaySizes(Class entityClass) {
         try{
-            // column_name=4, data_type=5, type_name=6, size=7, nullable=11  
-            return this.fetchIntMetaData(entityClass, 7);
+            return this.fetchIntMetaData(entityClass, COLUMN_SIZE);
         }catch(SQLException e) {
-            return null;
+            XLogger.getInstance().log(Level.WARNING, "Unexpected exception", this.getClass(), e);
+            return new int[0];
         }
     }
     
     @Override
-    public int [] getNullables(Class entityClass) {
-        
-        final Field [] fields = entityClass.getDeclaredFields();
-        
-        final String [] columnNames = this.getColumnNames(entityClass);
-        
-        final int [] nullables = new int[columnNames.length];
-        
-        for(int i=0; i<nullables.length; i++) {
-            
-            Field field = this.getField(fields, columnNames[i]);
-            
-            nullables[i] = this.getNullable(entityClass, field);
+    public int [] getColumnDataTypes(Class entityClass) {
+        try{
+            return this.fetchIntMetaData(entityClass, COLUMN_DATA_TYPE);
+        }catch(SQLException e) {
+            XLogger.getInstance().log(Level.WARNING, "Unexpected exception", this.getClass(), e);
+            return new int[0];
         }
-     
-        return nullables;
     }
     
-    private Field getField(Field [] fields, String columnName) {
-        
-        Field output = null;
-        
-        for(Field field:fields) {
-
-            if(field.getName().equals(columnName)) {
-
-                output = field;
-
-                break;
-            }
+    @Override
+    public int [] getColumnNullables(Class entityClass) {
+        try{
+            return this.fetchIntMetaData(entityClass, COLUMN_NULLABLE);
+        }catch(SQLException e) {
+            XLogger.getInstance().log(Level.WARNING, "Unexpected exception", this.getClass(), e);
+            return new int[0];
         }
-        
-        return output;
-    }
-        
-    protected int getNullable(Class entityClass, Field field) {
-        if(entityClass == null) {
-            throw new NullPointerException();
-        }
-        int nullable;
-        if(field != null) {
-            Basic basic = field.getAnnotation(Basic.class);
-            if(basic != null) {
-                nullable = basic.optional() ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls;
-            }else{
-                // Only OneToOne and ManyToOne may be optional (has the optional() method)
-                OneToOne one2one = field.getAnnotation(OneToOne.class);
-                if(one2one != null) {
-                    nullable = one2one.optional() ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls;
-                }else{
-                    ManyToOne many2one = field.getAnnotation(ManyToOne.class);
-                    if(many2one != null) {
-                        nullable = many2one.optional() ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls;
-                    }else{
-                        nullable = ResultSetMetaData.columnNullableUnknown;
-                    }
-                }
-            }
-        }else{
-            nullable = ResultSetMetaData.columnNullableUnknown;
-        }
-        return nullable;
     }
 
     @Override
@@ -661,7 +624,7 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
 
     @Override
     public String getPersistenceUnitName(String database) {
-        int index = this.indexOf(database);
+        int index = this.indexOfDatabase(database);
         if(index > -1) {
             return this.puNames.get(index);
         }else{
@@ -833,7 +796,7 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
         list.set(index, e);
     }
     
-    private int indexOf(String database) {
+    private int indexOfDatabase(String database) {
         int i = -1;
         for(String jdbcUrl:jdbcUrls) {
             ++i;
@@ -871,6 +834,80 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
     }
 
     private int [] fetchIntMetaData(Class entityClass, int resultSetDataIndex) throws SQLException {
+        
+        final IntegerArray intArray = new IntegerArray(30);
+        
+        EntityManager entityManager = jpaContext.getEntityManager(entityClass);
+        
+        try{
+            
+            entityManager.getTransaction().begin();
+        
+            final java.sql.Connection connection = entityManager.unwrap(java.sql.Connection.class);
+
+            final DatabaseMetaData dbMetaData = connection.getMetaData();
+
+            final String databaseName = this.getDatabaseName(entityClass);
+        
+            final String tableName = this.getTableName(entityClass);
+          
+            final ResultSet dbData = dbMetaData.getColumns(null, databaseName, tableName, null);
+
+            while(dbData.next()) {
+
+                int data = dbData.getInt(resultSetDataIndex);
+
+                intArray.add(data);
+            }
+
+            entityManager.getTransaction().commit();  
+            
+            return intArray.toArray();
+            
+        }finally{
+            
+            entityManager.close();
+        }
+    }
+
+    private String [] fetchStringMetaData(Class entityClass, int resultSetDataIndex) throws SQLException {
+        
+        final List<String> list = new LinkedList<>();
+        
+        EntityManager entityManager = jpaContext.getEntityManager(entityClass);
+        
+        try{
+            
+            entityManager.getTransaction().begin();
+        
+            final java.sql.Connection connection = entityManager.unwrap(java.sql.Connection.class);
+
+            final DatabaseMetaData dbMetaData = connection.getMetaData();
+
+            final String databaseName = this.getDatabaseName(entityClass);
+        
+            final String tableName = this.getTableName(entityClass);
+          
+            final ResultSet dbData = dbMetaData.getColumns(null, databaseName, tableName, null);
+
+            while(dbData.next()) {
+
+                String data = dbData.getString(resultSetDataIndex);
+
+                list.add(data);
+            }
+
+            entityManager.getTransaction().commit();  
+            
+            return list.isEmpty() ? new String[0] : list.toArray(new String[0]);
+            
+        }finally{
+            
+            entityManager.close();
+        }
+    }
+    
+    private int [] fetchIntMetaDataX_old(Class entityClass, int resultSetDataIndex) throws SQLException {
 
         final String [] columnNames = this.getColumnNames(entityClass);
         
@@ -891,15 +928,15 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
             final String databaseName = this.getDatabaseName(entityClass);
         
             final String tableName = this.getTableName(entityClass);
-            
-            ResultSet dbColumns = dbMetaData.getColumns(null, databaseName, tableName, null);
+          
+            final ResultSet dbData = dbMetaData.getColumns(null, databaseName, tableName, null);
 
-            while(dbColumns.next()) {
+            while(dbData.next()) {
 
-                String columnName = dbColumns.getString(4); // 4 == COLUMN_NAME
+                String columnName = dbData.getString(COLUMN_NAME);
 
-                int data = dbColumns.getInt(resultSetDataIndex);
-
+                int data = dbData.getInt(resultSetDataIndex);
+                
                 for(int i=0; i<columnNames.length; i++) {
                     if(columnName.equals(columnNames[i])) {
                         output[i] = data;

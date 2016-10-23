@@ -13,27 +13,27 @@ import com.bc.jpa.JpaContext;
  *
  * @author Josh
  */
-public class SearchQueryBuilder<R> extends BuilderForSelectImpl<R> {
+public class SearchDao<R> extends BuilderForSelectImpl<R> {
 
     private final int offset;
     
     private final int limit;
 
-    public SearchQueryBuilder(JpaContext cf, Class<R> resultType, String query, String... cols) {
+    public SearchDao(JpaContext cf, Class<R> resultType, String query, String... cols) {
         this(cf, resultType, -1, -1, query, cols);
     }
     
-    public SearchQueryBuilder(JpaContext cf, Class<R> resultType, int offset, int limit, String query, String... cols) {
+    public SearchDao(JpaContext cf, Class<R> resultType, int offset, int limit, String query, String... cols) {
         
         super(cf.getEntityManager(resultType), resultType, cf.getDatabaseFormat());
         
-        SearchQueryBuilder.this.from(resultType);
+        SearchDao.this.from(resultType);
         
-        SearchQueryBuilder.this.descOrder(cf.getMetaData().getIdColumnName(resultType));
+        SearchDao.this.descOrder(cf.getMetaData().getIdColumnName(resultType));
         
         if(query != null) {
         
-            SearchQueryBuilder.this.search(query, cols);
+            SearchDao.this.search(query, cols);
         }
         
         this.offset = offset;

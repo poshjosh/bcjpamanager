@@ -14,6 +14,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import com.bc.jpa.JpaContext;
 import com.bc.jpa.dao.BuilderForSelect;
+import com.bc.util.XLogger;
+import java.util.logging.Level;
 
 /**
  * @author Josh
@@ -89,8 +91,8 @@ public class SearchHandlerFactoryImpl implements SearchHandlerFactory {
             lock.lock();
             Map<String, SearchResults> sessionCache = typeCache.get(entityType);
             SearchResults<E> output = sessionCache == null ? null : sessionCache.remove(sessionId);
-            if(output != null && close) {
-                output.close();
+            if(output != null) {
+                this.close(output);
             }
             return output;
         }finally{
@@ -125,7 +127,7 @@ public class SearchHandlerFactoryImpl implements SearchHandlerFactory {
 
                 if(output != null) {
 
-                    output.close();
+                    this.close(output);
                 }
 
                 output = this.create(entityType, parameters);
@@ -179,18 +181,28 @@ public class SearchHandlerFactoryImpl implements SearchHandlerFactory {
         
         return new BaseSearchResults(queryBuilder, limit, true);
     } 
+    
+    private void close(SearchResults sr) {
+        if(sr instanceof AutoCloseable) {
+            try{
+                ((AutoCloseable)sr).close();
+            }catch(Exception e) {
+                XLogger.getInstance().log(Level.WARNING, "Exception closing "+sr.getClass().getName(), this.getClass(), e);
+            }
+        }
+    }
 
     protected <E> BuilderForSelect<E> createQueryBuilder(Class<E> resultType, String query, Date after, int offset, int limit) {
         BuilderForSelect queryBuilder;
         final String dateColumn;
         if(resultType == Feed.class) {
-            queryBuilder = new FeedQuery(cf, offset, limit, query);
+            queryBuilder = new FeedDao(cf, offset, limit, query);
             dateColumn = "feeddate";
         }else if(resultType == Comment.class) {
-            queryBuilder = new CommentQuery(cf, offset, limit, query);
+            queryBuilder = new CommentDao(cf, offset, limit, query);
             dateColumn = "datecreated";
         }else{
-            queryBuilder = new SearchQueryBuilder(cf, resultType, offset, limit, query);
+            queryBuilder = new SearchDao(cf, resultType, offset, limit, query);
             dateColumn = null;
         }
         

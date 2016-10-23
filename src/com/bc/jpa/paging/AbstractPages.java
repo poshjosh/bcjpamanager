@@ -153,7 +153,7 @@ XLogger.getInstance().log(Level.FINER, "Clearing batch at {0}", this.getClass(),
         return page;
     }
     
-    public final int computeNumberOfPages() {
+    protected final int computeNumberOfPages() {
         
         final int size = this.getSize();
         final int pageSize = this.getPageSize();

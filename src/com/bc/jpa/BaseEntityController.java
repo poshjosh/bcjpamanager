@@ -582,7 +582,7 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
     
     @Override
     public void setTableName(String tableName) {
-        final PersistenceMetaData metaData = this.getMetaData();
+        final JpaMetaData metaData = this.getMetaData();
         String databaseName = metaData.getDatabaseName(entityClass);
         Class aClass = metaData.getEntityClass(databaseName, tableName);
         // Use this method as it performs important logic
@@ -614,7 +614,7 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
             return;
         }
         
-        final PersistenceMetaData metaData = this.getMetaData();
+        final JpaMetaData metaData = this.getMetaData();
         
         boolean aIsRef = metaData.getReferencingClasses(entityClass) != null;
         boolean bIsRef = metaData.getReferencingClasses(anEntityClass) != null;
@@ -647,7 +647,7 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
     }
 
     @Override
-    public final PersistenceMetaData getMetaData() {
+    public final JpaMetaData getMetaData() {
         return this.jpaContext.getMetaData();
     }
 }

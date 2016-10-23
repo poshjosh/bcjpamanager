@@ -2,21 +2,25 @@
 <persistence version="2.1" xmlns="http://xmlns.jcp.org/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd">
   <persistence-unit name="idiscpu" transaction-type="RESOURCE_LOCAL">
     <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
-    <class>com.idisc.pu.entities.Feed</class>
-    <class>com.idisc.pu.entities.Archivedfeed</class>
-    <class>com.idisc.pu.entities.Comment</class>
-    <class>com.idisc.pu.entities.Howdidyoufindus</class>
-    <class>com.idisc.pu.entities.Favoritefeed</class>
-    <class>com.idisc.pu.entities.Feeduser</class>
+    <class>com.idisc.pu.entities.Applaunchlog</class>
     <class>com.idisc.pu.entities.Site</class>
-    <class>com.idisc.pu.entities.Country</class>
-    <class>com.idisc.pu.entities.Emailstatus</class>
-    <class>com.idisc.pu.entities.Sitetype</class>
+    <class>com.idisc.pu.entities.Comment</class>
+    <class>com.idisc.pu.entities.Archivedfeed</class>
+    <class>com.idisc.pu.entities.Bookmarkfeed</class>
+    <class>com.idisc.pu.entities.Howdidyoufindus</class>
+    <class>com.idisc.pu.entities.Gender</class>
     <class>com.idisc.pu.entities.Extractedemail</class>
+    <class>com.idisc.pu.entities.Localaddress</class>
+    <class>com.idisc.pu.entities.Feed</class>
     <class>com.idisc.pu.entities.Feedhit</class>
     <class>com.idisc.pu.entities.Installation</class>
-    <class>com.idisc.pu.entities.Gender</class>
-    <class>com.idisc.pu.entities.Bookmarkfeed</class>
+    <class>com.idisc.pu.entities.Commentreplynotice</class>
+    <class>com.idisc.pu.entities.Country</class>
+    <class>com.idisc.pu.entities.Sitetype</class>
+    <class>com.idisc.pu.entities.Favoritefeed</class>
+    <class>com.idisc.pu.entities.Feeduser</class>
+    <class>com.idisc.pu.entities.Emailstatus</class>
+    <class>com.idisc.pu.entities.Timezone</class>
     <properties>
       <property name="eclipselink.canonicalmodel.subpackage" value="one"/>  
       <property name="javax.persistence.jdbc.url" value="jdbc:mysql://europa.ignitionserver.net:3306/loosebox_idisc?zeroDateTimeBehavior=convertToNull"/>

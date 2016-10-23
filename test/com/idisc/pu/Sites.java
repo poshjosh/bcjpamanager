@@ -6,6 +6,8 @@ import com.idisc.pu.entities.Sitetype;
 import java.util.Date;
 import java.util.List;
 import com.bc.jpa.dao.BuilderForSelect;
+import com.idisc.pu.entities.Timezone;
+import java.util.Objects;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Aug 13, 2016 9:25:31 AM
@@ -17,9 +19,16 @@ public class Sites {
   public Sites(JpaContext jpaContext) {
     this.jpaContext = jpaContext;
   }    
-     
+
   public Site from(String siteName, Sitetype sitetype, boolean createIfNone) {
+    
+      return this.from(siteName, sitetype, this.getDefaultTimeZone(), createIfNone);
+  }
+  
+  public Site from(String siteName, Sitetype sitetype, Timezone timezone, boolean createIfNone) {
       
+    Objects.requireNonNull(timezone);
+    
     Site output;   
     
     try(BuilderForSelect<Site> qb = jpaContext.getBuilderForSelect(Site.class)) {
@@ -41,8 +50,9 @@ public class Sites {
           output.setDatecreated(new Date());
           output.setSite(siteName);
           output.setSitetypeid(sitetype);
+          output.setTimezoneid(timezone);
         
-          qb.getEntityManager().persist(output);
+          qb.begin().persist(output).commit();
           
         }else{
             
@@ -55,6 +65,10 @@ public class Sites {
     }
 
     return output;
+  }
+
+  public Timezone getDefaultTimeZone() {
+      return this.jpaContext.getEntityManager(Timezone.class).find(Timezone.class, 0);
   }
 }
 

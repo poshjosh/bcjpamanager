@@ -32,6 +32,8 @@ import javax.persistence.Persistence;
 import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.jpa.dao.BuilderForUpdate;
 import com.bc.jpa.dao.BuilderForUpdateImpl;
+import com.bc.jpa.dao.Dao;
+import com.bc.jpa.dao.DaoImpl;
 
 /**
  * @(#)DefaultControllerFactory.java   28-Jun-2014 18:47:01
@@ -53,7 +55,7 @@ public class JpaContextImpl implements JpaContext, Serializable {
     
     private final URI persistenceConfigURI;
 
-    private final PersistenceMetaData metaData;
+    private final JpaMetaData metaData;
     
     private final SQLDateTimePatterns dateTimePatterns;
     
@@ -86,7 +88,7 @@ public class JpaContextImpl implements JpaContext, Serializable {
         
         this.dateTimePatterns = Objects.requireNonNull(dateTimePatterns);
         
-        this.metaData = new PersistenceMetaDataImpl(this);        
+        this.metaData = new JpaMetaDataImpl(this);        
         
         if(enumRefClasses != null) {
             this.enumReferences = new EnumReferencesImpl(this, enumRefClasses);
@@ -120,6 +122,11 @@ public class JpaContextImpl implements JpaContext, Serializable {
     @Override
     public final EnumReferences getEnumReferences() {
         return this.enumReferences;
+    }
+
+    @Override
+    public Dao getDao(Class entityType) {
+        return new DaoImpl(this.getEntityManager(entityType), this.getDatabaseFormat());
     }
 
     @Override
@@ -471,7 +478,7 @@ logger.log(level, "Using classloader: {0} to load persistence.xml file", cls, re
     }
     
     @Override
-    public final PersistenceMetaData getMetaData() {
+    public final JpaMetaData getMetaData() {
         return metaData;
     }
 }

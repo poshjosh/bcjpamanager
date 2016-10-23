@@ -20,6 +20,7 @@ import com.bc.jpa.dao.BuilderForSelectImpl;
 import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.jpa.EntityController;
 import com.bc.jpa.JpaContext;
+import com.bc.jpa.dao.SelectDao;
 import com.looseboxes.pu.entities.Product;
 import java.util.List;
 import javax.persistence.EntityManager;
@@ -90,20 +91,18 @@ System.out.println("================================: "+BuilderForSelectImpl.cla
             List<Product> found = instance.from(Product.class)
                     .createQuery().setMaxResults(maxResults).getResultList();
 System.out.println("Found: "+(found==null?null:found.size()));
-        }
 
-        try(BuilderForSelect<Product> instance = this.createSelect(Product.class)) {
-
+            instance.reset();
+            
             List<Product> found2 = instance.from(Product.class)
                     .where("productid", productids)
                     .createQuery().getResultList();
 System.out.println("Found2: "+(found2==null?null:found2.size()));            
-        }
+
+            SelectDao<Long> selectLong = instance.forSelect(Long.class);
         
-        try(BuilderForSelect<Long> instance = this.createSelect(Long.class)) {
-        
-            Long count = instance.from(Product.class)
-                    .count().createQuery().getSingleResult();
+            Long count = selectLong.getCriteria()
+                    .from(Product.class).count().createQuery().getSingleResult();
 System.out.println("Count: "+count);            
         }
         
@@ -126,15 +125,15 @@ System.out.println("================================: "+em.getClass().getSimpleN
             Root<Product> root = cq.from(entityClass); 
             List<Product> found = em.createQuery(cq).setMaxResults(maxResults).getResultList();
 System.out.println("Found: "+(found==null?null:found.size()));
-        }finally{
-            em.close();
-        }
+//        }finally{
+//            em.close();
+//        }
         
-        em = jpaContext.getEntityManager(entityClass);
-        try{
-            CriteriaBuilder cb = em.getCriteriaBuilder();
-            CriteriaQuery<Product> cq = cb.createQuery(entityClass);
-            Root<Product> root = cq.from(entityClass); 
+//        em = jpaContext.getEntityManager(entityClass);
+//        try{
+            cb = em.getCriteriaBuilder();
+            cq = cb.createQuery(entityClass);
+            root = cq.from(entityClass); 
             Predicate [] predicates = new Predicate[productids.length];
             for(int i=0; i<productids.length; i++) {
                 predicates[i] = cb.equal(root.get("productid"), productids[i]);
@@ -142,17 +141,17 @@ System.out.println("Found: "+(found==null?null:found.size()));
             cq = cq.where(cb.or(predicates)); 
             List<Product> found2 = em.createQuery(cq).getResultList();
 System.out.println("Found2: "+(found2==null?null:found2.size()));
-        }finally{
-            em.close();
-        }
+//        }finally{
+//            em.close();
+//        }
 
-        em = jpaContext.getEntityManager(entityClass);
-        try{
-            CriteriaBuilder cb = em.getCriteriaBuilder();
-            CriteriaQuery<Long> cq = cb.createQuery(Long.class); 
-            Root employee = cq.from(Product.class);
-            cq.select(cb.count(employee));
-            Long count = em.createQuery(cq).getSingleResult();
+//        em = jpaContext.getEntityManager(entityClass);
+//        try{
+            cb = em.getCriteriaBuilder();
+            CriteriaQuery<Long> cqLong = cb.createQuery(Long.class); 
+            Root productLong = cqLong.from(Product.class);
+            cqLong.select(cb.count(productLong));
+            Long count = em.createQuery(cqLong).getSingleResult();
 System.out.println("Count: "+count);                        
         }finally{
             em.close();

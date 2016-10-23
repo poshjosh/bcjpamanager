@@ -46,9 +46,9 @@ import org.eclipse.persistence.queries.ReportQuery;
  * @author dclarke
  * @since EclipseLink 2.3.1
  */
-public class QueryResultPages<T> extends AbstractPages<T> implements AutoCloseable {
+public class QueryResultPages<T> extends AbstractPages<T> {
 
-    private transient TypedQuery typedQuery;
+    private transient final TypedQuery typedQuery;
 
     public QueryResultPages(TypedQuery<T> typedQuery) {  
         this(typedQuery, 20);
@@ -59,11 +59,6 @@ public class QueryResultPages<T> extends AbstractPages<T> implements AutoCloseab
         this.typedQuery = Objects.requireNonNull(typedQuery);
     }
     
-    @Override
-    public void close() {
-        this.typedQuery = null;
-    }
-
     @Override
     protected List<T> loadBatch(int pageNum) {
         final int batchSize = this.getPageSize();

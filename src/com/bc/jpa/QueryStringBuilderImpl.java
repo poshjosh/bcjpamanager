@@ -1,7 +1,5 @@
 package com.bc.jpa;
 
-import com.bc.jpa.JpaContext;
-import com.bc.jpa.PersistenceMetaData;
 import com.bc.util.XLogger;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -452,7 +450,7 @@ XLogger.getInstance().log(Level.FINE, "Query: {0}", this.getClass(), selectQuery
     }
 
     @Override
-    public final PersistenceMetaData getMetaData() {
+    public final JpaMetaData getMetaData() {
         return jpaContext.getMetaData();
     }
 }

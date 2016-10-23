@@ -32,7 +32,7 @@ public class SearchResultsTestBase extends TestCase {
         
 System.out.println("======================= testing all ======================");
         
-        try(SearchResults<R> instance = 
+        try(BaseSearchResults<R> instance = 
                 this.createInstance(jpaContext, entityType, resultType, query, batchSize, useCache)
         )  {
 
@@ -47,7 +47,7 @@ System.out.println("======================= testing all ======================")
             
             final int numberToRead = instance.getPageSize() * batchesToRead;
             
-            PaginatedList<R> resultsList = instance.getAllResults();
+            PaginatedList<R> resultsList = instance.getPages();
             
 System.out.println("Number of results: " + (resultsList==null?null:resultsList.size()));
 this.printList(jpaContext, entityType, resultsList);
@@ -122,7 +122,7 @@ System.out.println("======================= testing reset() ====================
 
 System.out.println("======================= AFTER reset() reading results ======================");
 
-            resultsList = instance.getAllResults();
+            resultsList = instance.getPages();
             
 System.out.println("Number of results: " + (resultsList==null?null:resultsList.size()));
 this.printList(jpaContext, entityType, resultsList);
@@ -155,12 +155,12 @@ System.out.println("======================= testing all finished ===============
 System.out.println(b);        
     }
 
-    public <R> SearchResults createInstance(
+    public <R> BaseSearchResults createInstance(
             JpaContext jpaContext, Class entityType, Class<R> resultType, String query) {
         return new BaseSearchResults(this.createQueryBuilder(jpaContext, entityType, resultType, query));
     }
 
-    public <R> SearchResults createInstance(
+    public <R> BaseSearchResults createInstance(
             JpaContext jpaContext, Class entityType, Class<R> resultType, 
             String query, int batchSize, boolean useCache) {
         return new BaseSearchResults(

@@ -34,60 +34,57 @@ import javax.persistence.TemporalType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on Oct 3, 2016 5:25:22 PM
+ * @author Chinomso Bassey Ikwuagwu on Oct 3, 2016 5:25:24 PM
  */
 @Entity
-@Table(name = "favoritefeed")
+@Table(name = "applaunchlog")
 @XmlRootElement
 @NamedQueries({
-    @NamedQuery(name = "Favoritefeed.findAll", query = "SELECT f FROM Favoritefeed f"),
-    @NamedQuery(name = "Favoritefeed.findByFavoritefeedid", query = "SELECT f FROM Favoritefeed f WHERE f.favoritefeedid = :favoritefeedid"),
-    @NamedQuery(name = "Favoritefeed.findByDatecreated", query = "SELECT f FROM Favoritefeed f WHERE f.datecreated = :datecreated")})
-public class Favoritefeed implements Serializable {
+    @NamedQuery(name = "Applaunchlog.findAll", query = "SELECT a FROM Applaunchlog a"),
+    @NamedQuery(name = "Applaunchlog.findByApplaunchlogid", query = "SELECT a FROM Applaunchlog a WHERE a.applaunchlogid = :applaunchlogid"),
+    @NamedQuery(name = "Applaunchlog.findByLaunchtime", query = "SELECT a FROM Applaunchlog a WHERE a.launchtime = :launchtime")})
+public class Applaunchlog implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
-    @Column(name = "favoritefeedid")
-    private Integer favoritefeedid;
+    @Column(name = "applaunchlogid")
+    private Integer applaunchlogid;
     @Basic(optional = false)
-    @Column(name = "datecreated")
+    @Column(name = "launchtime")
     @Temporal(TemporalType.TIMESTAMP)
-    private Date datecreated;
+    private Date launchtime;
     @JoinColumn(name = "installationid", referencedColumnName = "installationid")
-    @ManyToOne(optional = false)
+    @ManyToOne
     private Installation installationid;
-    @JoinColumn(name = "feedid", referencedColumnName = "feedid")
-    @ManyToOne(optional = false)
-    private Feed feedid;
 
-    public Favoritefeed() {
+    public Applaunchlog() {
     }
 
-    public Favoritefeed(Integer favoritefeedid) {
-        this.favoritefeedid = favoritefeedid;
+    public Applaunchlog(Integer applaunchlogid) {
+        this.applaunchlogid = applaunchlogid;
     }
 
-    public Favoritefeed(Integer favoritefeedid, Date datecreated) {
-        this.favoritefeedid = favoritefeedid;
-        this.datecreated = datecreated;
+    public Applaunchlog(Integer applaunchlogid, Date launchtime) {
+        this.applaunchlogid = applaunchlogid;
+        this.launchtime = launchtime;
     }
 
-    public Integer getFavoritefeedid() {
-        return favoritefeedid;
+    public Integer getApplaunchlogid() {
+        return applaunchlogid;
     }
 
-    public void setFavoritefeedid(Integer favoritefeedid) {
-        this.favoritefeedid = favoritefeedid;
+    public void setApplaunchlogid(Integer applaunchlogid) {
+        this.applaunchlogid = applaunchlogid;
     }
 
-    public Date getDatecreated() {
-        return datecreated;
+    public Date getLaunchtime() {
+        return launchtime;
     }
 
-    public void setDatecreated(Date datecreated) {
-        this.datecreated = datecreated;
+    public void setLaunchtime(Date launchtime) {
+        this.launchtime = launchtime;
     }
 
     public Installation getInstallationid() {
@@ -98,29 +95,21 @@ public class Favoritefeed implements Serializable {
         this.installationid = installationid;
     }
 
-    public Feed getFeedid() {
-        return feedid;
-    }
-
-    public void setFeedid(Feed feedid) {
-        this.feedid = feedid;
-    }
-
     @Override
     public int hashCode() {
         int hash = 0;
-        hash += (favoritefeedid != null ? favoritefeedid.hashCode() : 0);
+        hash += (applaunchlogid != null ? applaunchlogid.hashCode() : 0);
         return hash;
     }
 
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof Favoritefeed)) {
+        if (!(object instanceof Applaunchlog)) {
             return false;
         }
-        Favoritefeed other = (Favoritefeed) object;
-        if ((this.favoritefeedid == null && other.favoritefeedid != null) || (this.favoritefeedid != null && !this.favoritefeedid.equals(other.favoritefeedid))) {
+        Applaunchlog other = (Applaunchlog) object;
+        if ((this.applaunchlogid == null && other.applaunchlogid != null) || (this.applaunchlogid != null && !this.applaunchlogid.equals(other.applaunchlogid))) {
             return false;
         }
         return true;
@@ -128,7 +117,7 @@ public class Favoritefeed implements Serializable {
 
     @Override
     public String toString() {
-        return "com.idisc.pu.entities.Favoritefeed[ favoritefeedid=" + favoritefeedid + " ]";
+        return "com.idisc.pu.entities.Applaunchlog[ applaunchlogid=" + applaunchlogid + " ]";
     }
 
 }

@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
@@ -48,7 +49,7 @@ public class ReferenceEntityController<E, e, K>
     @Override
     public void create(E reference) {
         
-        PersistenceMetaData metaData = this.getMetaData();
+        JpaMetaData metaData = this.getMetaData();
         
         Class [] refingClasses = metaData.getReferencingClasses(this.getEntityClass());
         
@@ -87,7 +88,7 @@ public class ReferenceEntityController<E, e, K>
                         E refOldId = (E)JpaUtil.getValue(refingClass, 
                             referencing, fields, refingColumn);
 
-                        JpaUtil.setValue(this.getEntityClass(), 
+                        JpaUtil.setValue(refingClass, 
                                 referencing, fields, refingColumn, reference);
                         
 //                        this.setReference(referencing, reference, this.getEntityClass());
@@ -120,7 +121,9 @@ public class ReferenceEntityController<E, e, K>
     @Override
     public void edit(E reference) throws IllegalOrphanException, NonexistentEntityException, Exception {
 
-        PersistenceMetaData metaData = this.getMetaData();
+        Objects.requireNonNull(reference);
+        
+        JpaMetaData metaData = this.getMetaData();
 
         Class [] refingClasses = metaData.getReferencingClasses(this.getEntityClass());
         
@@ -128,6 +131,8 @@ XLogger.getInstance().log(Level.FINE, "Entity class: {0}, referencing classes: {
 this.getClass(), this.getEntityClass(), refingClasses==null?null:Arrays.toString(refingClasses));
         
         EntityManager em = this.getEntityManager();
+        
+        e refId = null;
         
         try {
             
@@ -137,11 +142,11 @@ this.getClass(), this.getEntityClass(), refingClasses==null?null:Arrays.toString
                 
                 t.begin();
                 
-                e refId = this.getId(reference);
+                refId = this.getId(reference);
 
                 E referenceFromDb;
                 if(refId == null) {
-                    throw new UnsupportedOperationException("Cannot edit an entity without an id value: "+reference);
+                    throw new UnsupportedOperationException("Cannot edit an entity without an id value. Entity of type: "+reference.getClass().getName());
                 }else{
                     referenceFromDb = (E)em.find(this.getEntityClass(), refId);
                 }
@@ -235,11 +240,12 @@ this.getClass(), refingClass, refingIdColumn, crossRefColumn);
             
             if (msg == null || msg.length() == 0) {
 
-                e id = (e)this.getId(reference);
-                
-                if (find(id) == null) {
+                if(refId != null) {
                     
-                    throw new NonexistentEntityException("The "+this.getEntityClass().getName()+" with id " + id + " no longer exists.");
+                    if (find(refId) == null) {
+
+                        throw new NonexistentEntityException("The "+this.getEntityClass().getName()+" with id " + refId + " no longer exists.");
+                    }
                 }
             }
             
@@ -266,7 +272,7 @@ this.getClass(), refingClass, refingIdColumn, crossRefColumn);
                 reference = (E)em.getReference(
                         this.getEntityClass(), id);
                 
-//                this.getId(reference);
+                this.getId(reference); // This ensures the entity actually exists
                 
             } catch (EntityNotFoundException enfe) {
                 throw new NonexistentEntityException(
@@ -278,7 +284,7 @@ this.getClass(), refingClass, refingIdColumn, crossRefColumn);
 
             StringBuilder msgBuffer = null;
 
-            PersistenceMetaData metaData = this.getMetaData();
+            JpaMetaData metaData = this.getMetaData();
             
             Class [] refingClasses = metaData.getReferencingClasses(this.getEntityClass());
 
@@ -321,30 +327,40 @@ this.getClass(), refingClass, refingIdColumn, crossRefColumn);
         }
     }
     
-    private void updateReferencing(EntityManager em, E reference) {
+    private boolean updateReferencing(EntityManager em, E reference) {
         
-        Class [] refingClasses = this.getMetaData().getReferencingClasses(this.getEntityClass());
+        final e ID = this.getId(reference);
         
-        ArrayList<K> attached = new ArrayList<>();
-
-        for(Class refingClass:refingClasses) {
-
-            Collection<K> refingList = (Collection<K>)
-                    this.getReferencing(reference, refingClass);
+        if(ID == null) {
             
-            if(refingList == null || refingList.isEmpty()) {
-                continue;
+            return false;
+            
+        }else{
+            
+            Class [] refingClasses = this.getMetaData().getReferencingClasses(this.getEntityClass());
+
+            ArrayList<K> attached = new ArrayList<>();
+
+            for(Class refingClass:refingClasses) {
+
+                Collection<K> refingList = (Collection<K>)
+                        this.getReferencing(reference, refingClass);
+
+                if(refingList == null || refingList.isEmpty()) {
+                    continue;
+                }
+
+                for (K referencing : refingList) {
+
+                    referencing = (K)em.getReference(refingClass, ID);
+
+                    attached.add(referencing);
+                }
+
+                this.setReferencing(reference, attached, refingClass);
             }
-
-            for (K referencing : refingList) {
-
-                referencing = (K)em.getReference(
-                        refingClass, this.getId(reference));
-
-                attached.add(referencing);
-            }
-
-            this.setReferencing(reference, attached, refingClass);
+            
+            return true;
         }
     }
 

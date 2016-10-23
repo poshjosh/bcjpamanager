@@ -1,12 +1,12 @@
 package com.bc.jpa;
 
-import com.bc.jpa.PersistenceMetaData;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
+import com.bc.jpa.JpaMetaData;
 
 /**
  * @(#)JPQL.java   27-Jun-2014 18:13:33
@@ -65,7 +65,7 @@ public interface QueryStringBuilder<E> {
 
     Class<E> getEntityClass();
 
-    PersistenceMetaData getMetaData();
+    JpaMetaData getMetaData();
 
     String getSelectQuery(Collection selectCols, Set whereColumnNames, String connector, Map orderBy);
 

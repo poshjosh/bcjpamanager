@@ -34,6 +34,7 @@ import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import com.bc.jpa.dao.BuilderForSelect;
+import java.util.Objects;
 
 /**
  * @(#)DefaultEntityController.java   08-Dec-2013 02:14:22
@@ -706,10 +707,17 @@ logger.log(Level.FINER, "Query: {0}", queryBuff);
                     this.edit(oldEntity);
 //System.out.println(" AFTER DbEdit. Row: "+new TreeMap(this.toMap(oldEntity)));
                     newEntity = oldEntity;
+                    
                 }else{
+                    
                     // Due to the create, this logic should consume more memory
                     newEntity = this.toEntity(update, true);
-                    this.setId(newEntity, this.getId(oldEntity));
+                    
+                    final e ID = Objects.requireNonNull(this.getId(oldEntity),
+                            "ID is required but found null value for entity of type: "+oldEntity.getClass().getName()+", retrieved from database using parameters: "+where);
+                    
+                    this.setId(newEntity, ID);
+                    
                     this.edit(newEntity); 
                 }
                 if(output == null) {
@@ -756,7 +764,7 @@ logger.log(Level.FINER, "Query: {0}", queryBuff);
     @Override
     public void toMap(E entity, Map map, boolean nullsAllowed) {
         
-        new EntityMapBuilderImpl(nullsAllowed, 0, 100, null, null).build(entity, this.getEntityClass(), map);
+        new EntityMapBuilderImpl(nullsAllowed, 1, 100, null, null).build(this.getEntityClass(), entity, map);
     }
 
     @Override

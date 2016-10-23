@@ -1,7 +1,17 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2016 NUROX Ltd.
+ *
+ * Licensed under the NUROX Ltd Software License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.looseboxes.com/legal/licenses/software.html
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.idisc.pu.entities;
@@ -27,7 +37,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on Aug 13, 2016 10:53:11 PM
+ * @author Chinomso Bassey Ikwuagwu on Oct 3, 2016 5:25:25 PM
  */
 @Entity
 @Table(name = "feeduser")
@@ -42,11 +52,6 @@ import javax.xml.bind.annotation.XmlTransient;
     @NamedQuery(name = "Feeduser.findByPhoneNumber1", query = "SELECT f FROM Feeduser f WHERE f.phoneNumber1 = :phoneNumber1"),
     @NamedQuery(name = "Feeduser.findByPhoneNumber2", query = "SELECT f FROM Feeduser f WHERE f.phoneNumber2 = :phoneNumber2"),
     @NamedQuery(name = "Feeduser.findByFax", query = "SELECT f FROM Feeduser f WHERE f.fax = :fax"),
-    @NamedQuery(name = "Feeduser.findByStateOrRegion", query = "SELECT f FROM Feeduser f WHERE f.stateOrRegion = :stateOrRegion"),
-    @NamedQuery(name = "Feeduser.findByCity", query = "SELECT f FROM Feeduser f WHERE f.city = :city"),
-    @NamedQuery(name = "Feeduser.findByCounty", query = "SELECT f FROM Feeduser f WHERE f.county = :county"),
-    @NamedQuery(name = "Feeduser.findByStreetAddress", query = "SELECT f FROM Feeduser f WHERE f.streetAddress = :streetAddress"),
-    @NamedQuery(name = "Feeduser.findByPostalCode", query = "SELECT f FROM Feeduser f WHERE f.postalCode = :postalCode"),
     @NamedQuery(name = "Feeduser.findByImage1", query = "SELECT f FROM Feeduser f WHERE f.image1 = :image1"),
     @NamedQuery(name = "Feeduser.findByDatecreated", query = "SELECT f FROM Feeduser f WHERE f.datecreated = :datecreated"),
     @NamedQuery(name = "Feeduser.findByTimemodified", query = "SELECT f FROM Feeduser f WHERE f.timemodified = :timemodified"),
@@ -75,16 +80,6 @@ public class Feeduser implements Serializable {
     private String phoneNumber2;
     @Column(name = "fax")
     private String fax;
-    @Column(name = "stateOrRegion")
-    private String stateOrRegion;
-    @Column(name = "city")
-    private String city;
-    @Column(name = "county")
-    private String county;
-    @Column(name = "streetAddress")
-    private String streetAddress;
-    @Column(name = "postalCode")
-    private String postalCode;
     @Column(name = "image1")
     private String image1;
     @Basic(optional = false)
@@ -100,12 +95,12 @@ public class Feeduser implements Serializable {
     @JoinColumn(name = "gender", referencedColumnName = "genderid")
     @ManyToOne
     private Gender gender;
-    @JoinColumn(name = "country", referencedColumnName = "countryid")
-    @ManyToOne
-    private Country country;
     @JoinColumn(name = "howDidYouFindUs", referencedColumnName = "howdidyoufindusid")
     @ManyToOne
     private Howdidyoufindus howDidYouFindUs;
+    @JoinColumn(name = "localaddressid", referencedColumnName = "localaddressid")
+    @ManyToOne
+    private Localaddress localaddressid;
     @OneToMany(mappedBy = "feeduserid")
     private List<Installation> installationList;
 
@@ -187,46 +182,6 @@ public class Feeduser implements Serializable {
         this.fax = fax;
     }
 
-    public String getStateOrRegion() {
-        return stateOrRegion;
-    }
-
-    public void setStateOrRegion(String stateOrRegion) {
-        this.stateOrRegion = stateOrRegion;
-    }
-
-    public String getCity() {
-        return city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
-    public String getCounty() {
-        return county;
-    }
-
-    public void setCounty(String county) {
-        this.county = county;
-    }
-
-    public String getStreetAddress() {
-        return streetAddress;
-    }
-
-    public void setStreetAddress(String streetAddress) {
-        this.streetAddress = streetAddress;
-    }
-
-    public String getPostalCode() {
-        return postalCode;
-    }
-
-    public void setPostalCode(String postalCode) {
-        this.postalCode = postalCode;
-    }
-
     public String getImage1() {
         return image1;
     }
@@ -267,20 +222,20 @@ public class Feeduser implements Serializable {
         this.gender = gender;
     }
 
-    public Country getCountry() {
-        return country;
-    }
-
-    public void setCountry(Country country) {
-        this.country = country;
-    }
-
     public Howdidyoufindus getHowDidYouFindUs() {
         return howDidYouFindUs;
     }
 
     public void setHowDidYouFindUs(Howdidyoufindus howDidYouFindUs) {
         this.howDidYouFindUs = howDidYouFindUs;
+    }
+
+    public Localaddress getLocaladdressid() {
+        return localaddressid;
+    }
+
+    public void setLocaladdressid(Localaddress localaddressid) {
+        this.localaddressid = localaddressid;
     }
 
     @XmlTransient

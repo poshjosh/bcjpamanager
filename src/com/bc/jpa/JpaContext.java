@@ -11,6 +11,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.JoinColumn;
 import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.jpa.dao.BuilderForUpdate;
+import com.bc.jpa.dao.Dao;
 
 /**
  * @(#)ControllerFactory.java   20-Mar-2014 18:09:39
@@ -39,6 +40,8 @@ public interface JpaContext {
     
     EntityManagerFactory getEntityManagerFactory(String persistenceUnit);    
         
+    Dao getDao(Class entityType);
+    
     <T> BuilderForSelect<T> getBuilderForSelect(Class<T> entityAndResultType);
     
     <T> BuilderForSelect<T> getBuilderForSelect(Class entityType, Class<T> resultType);
@@ -108,7 +111,7 @@ public interface JpaContext {
 
     EntityManager getEntityManager(Class entityClass);
     
-    PersistenceMetaData getMetaData();
+    JpaMetaData getMetaData();
     
     EnumReferences getEnumReferences();
 }

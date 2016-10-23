@@ -1,7 +1,17 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2016 NUROX Ltd.
+ *
+ * Licensed under the NUROX Ltd Software License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.looseboxes.com/legal/licenses/software.html
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.idisc.pu.entities;
@@ -20,7 +30,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on Aug 13, 2016 10:53:10 PM
+ * @author Chinomso Bassey Ikwuagwu on Oct 3, 2016 5:25:22 PM
  */
 @Entity
 @Table(name = "country")
@@ -28,7 +38,9 @@ import javax.xml.bind.annotation.XmlTransient;
 @NamedQueries({
     @NamedQuery(name = "Country.findAll", query = "SELECT c FROM Country c"),
     @NamedQuery(name = "Country.findByCountryid", query = "SELECT c FROM Country c WHERE c.countryid = :countryid"),
-    @NamedQuery(name = "Country.findByCountry", query = "SELECT c FROM Country c WHERE c.country = :country")})
+    @NamedQuery(name = "Country.findByCountry", query = "SELECT c FROM Country c WHERE c.country = :country"),
+    @NamedQuery(name = "Country.findByCodeIso2", query = "SELECT c FROM Country c WHERE c.codeIso2 = :codeIso2"),
+    @NamedQuery(name = "Country.findByCodeIso3", query = "SELECT c FROM Country c WHERE c.codeIso3 = :codeIso3")})
 public class Country implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -39,8 +51,16 @@ public class Country implements Serializable {
     @Basic(optional = false)
     @Column(name = "country")
     private String country;
+    @Column(name = "codeIso2")
+    private String codeIso2;
+    @Column(name = "codeIso3")
+    private String codeIso3;
     @OneToMany(mappedBy = "country")
-    private List<Feeduser> feeduserList;
+    private List<Localaddress> localaddressList;
+    @OneToMany(mappedBy = "countryid")
+    private List<Site> siteList;
+    @OneToMany(mappedBy = "countryid")
+    private List<Installation> installationList;
 
     public Country() {
     }
@@ -70,13 +90,47 @@ public class Country implements Serializable {
         this.country = country;
     }
 
-    @XmlTransient
-    public List<Feeduser> getFeeduserList() {
-        return feeduserList;
+    public String getCodeIso2() {
+        return codeIso2;
     }
 
-    public void setFeeduserList(List<Feeduser> feeduserList) {
-        this.feeduserList = feeduserList;
+    public void setCodeIso2(String codeIso2) {
+        this.codeIso2 = codeIso2;
+    }
+
+    public String getCodeIso3() {
+        return codeIso3;
+    }
+
+    public void setCodeIso3(String codeIso3) {
+        this.codeIso3 = codeIso3;
+    }
+
+    @XmlTransient
+    public List<Localaddress> getLocaladdressList() {
+        return localaddressList;
+    }
+
+    public void setLocaladdressList(List<Localaddress> localaddressList) {
+        this.localaddressList = localaddressList;
+    }
+
+    @XmlTransient
+    public List<Site> getSiteList() {
+        return siteList;
+    }
+
+    public void setSiteList(List<Site> siteList) {
+        this.siteList = siteList;
+    }
+
+    @XmlTransient
+    public List<Installation> getInstallationList() {
+        return installationList;
+    }
+
+    public void setInstallationList(List<Installation> installationList) {
+        this.installationList = installationList;
     }
 
     @Override

@@ -7,7 +7,6 @@ import com.bc.sql.SQLUtils;
 import com.bc.util.XLogger;
 import java.lang.reflect.Field;
 import java.sql.Types;
-import java.util.Arrays;
 import java.util.logging.Level;
 import javax.persistence.JoinColumn;
 
@@ -147,7 +146,7 @@ this.getClass(), mb4-Runtime.getRuntime().freeMemory(), System.currentTimeMillis
     @Override
     public boolean isDatabaseColumn(Class entityType, Object key) {
         boolean output = false;
-        final String [] cols = this.getColumnNames(entityType);
+        final String [] cols = this.getJpaContext().getMetaData().getColumnNames(entityType);
         synchronized(cols) {
             String sval = key.toString();
             for(String col:cols) {
@@ -177,12 +176,5 @@ XLogger.getInstance().log(Level.FINER, "Column: {0}, value: {1}", this.getClass(
         }
 XLogger.getInstance().log(Level.FINER, "Column: {0}, value: {1}, entity: {2}", this.getClass(), key, value, reference);
         return reference;
-    }
-    
-    public String [] getColumnNames(Class entityType) {
-        String [] output = this.getJpaContext().getMetaData().getColumnNames(entityType);
-XLogger.getInstance().log(Level.FINER, "Entity type: {0}, columns: {1}", 
-this.getClass(), entityType, output == null ? null : Arrays.toString(output));
-        return output;
     }
 }

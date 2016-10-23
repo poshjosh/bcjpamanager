@@ -19,14 +19,11 @@ import com.bc.jpa.paging.PaginatedList;
  * @version  2.0
  * @since    2.0
  */
-public interface SearchResults<T> extends Paginated<T>, java.lang.AutoCloseable {
+public interface SearchResults<T> extends Paginated<T> {
     
     SearchResults EMPTY_INSTANCE = new EmptySearchResults();
     
-    @Override
-    void close();
-    
-    PaginatedList<T> getAllResults();
+    PaginatedList<T> getPages();
     
     List<T> getCurrentPage();
 
@@ -47,15 +44,12 @@ public interface SearchResults<T> extends Paginated<T>, java.lang.AutoCloseable 
         public void reset() { }
 
         @Override
-        public void close() { }
-
-        @Override
         public T get(int index) {
             return (T)PaginatedList.EMPTY_PAGINATED_LIST.get(index);
         }
 
         @Override
-        public PaginatedList<T> getAllResults() {
+        public PaginatedList<T> getPages() {
             return PaginatedList.EMPTY_PAGINATED_LIST;
         }
 

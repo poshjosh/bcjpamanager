@@ -15,6 +15,10 @@ import java.util.Map;
 import javax.persistence.TypedQuery;
 import junit.framework.TestCase;
 import com.bc.jpa.dao.BuilderForSelect;
+import com.idisc.pu.entities.Timezone;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Josh
@@ -41,9 +45,9 @@ public class JpaUtilTest extends TestCase {
         
         Feed feed = this.getDummyFeed(1, true);
         
-        List ignoreList = Arrays.asList(Archivedfeed.class);
+        Set<Class> ignore = new HashSet(Arrays.asList(Archivedfeed.class));
         
-        Map appendTo = new EntityMapBuilderImpl(false, Integer.MAX_VALUE, 10, null, ignoreList).build(feed);
+        Map appendTo = new EntityMapBuilderImpl(false, Integer.MAX_VALUE, 10, null, ignore).build(feed);
         
         JsonBuilder jb = new JsonBuilder(true);
         
@@ -87,6 +91,7 @@ public class JpaUtilTest extends TestCase {
         site.setIconurl(null);
         site.setSite("Site sitename");
         site.setSiteid(id);
+        site.setTimezoneid(this.getDummyTimezone(site));
         if(sitetypeToo) {
             site.setSitetypeid(this.getDummySitetype(site, id));
         }
@@ -111,6 +116,15 @@ public class JpaUtilTest extends TestCase {
         bm.setFeedid(feed);
         bm.setInstallationid(null);
         return bm;
+    }
+    
+    private Timezone getDummyTimezone(Site site) {
+        Timezone tz = new Timezone();
+        tz.setAbbreviation("UTC");
+        tz.setSiteList(new ArrayList(Arrays.asList(site)));
+        tz.setTimezoneid((short)0);
+        tz.setTimezonename("UTC");
+        return tz;
     }
     
     private Feed getRemoteFeed() {

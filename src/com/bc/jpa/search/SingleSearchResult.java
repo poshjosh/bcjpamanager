@@ -32,15 +32,12 @@ public class SingleSearchResult<T> implements SearchResults<T> {
     public void reset() { }
     
     @Override
-    public void close() { }
-
-    @Override
     public T get(int index) {
         return results.get(index);
     }
 
     @Override
-    public PaginatedList<T> getAllResults() {
+    public PaginatedList<T> getPages() {
         return new ListPager(this.results, this.results.size());
     }
 

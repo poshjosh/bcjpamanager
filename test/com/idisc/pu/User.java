@@ -1,9 +1,9 @@
 package com.idisc.pu;
 
-import com.idisc.pu.entities.Country;
 import com.idisc.pu.entities.Feeduser;
 import com.idisc.pu.entities.Gender;
 import com.idisc.pu.entities.Howdidyoufindus;
+import com.idisc.pu.entities.Localaddress;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
@@ -155,54 +155,14 @@ public class User extends Feeduser {
     this.delegate.setFax(fax);
   }
   
-  public String getStateOrRegion()
+  public Localaddress getLocaladdressid()
   {
-    return this.delegate.getStateOrRegion();
+    return this.delegate.getLocaladdressid();
   }
   
-  public void setStateOrRegion(String stateOrRegion)
+  public void setLocaladdressid(Localaddress localaddress)
   {
-    this.delegate.setStateOrRegion(stateOrRegion);
-  }
-  
-  public String getCity()
-  {
-    return this.delegate.getCity();
-  }
-  
-  public void setCity(String city)
-  {
-    this.delegate.setCity(city);
-  }
-  
-  public String getCounty()
-  {
-    return this.delegate.getCounty();
-  }
-  
-  public void setCounty(String county)
-  {
-    this.delegate.setCounty(county);
-  }
-  
-  public String getStreetAddress()
-  {
-    return this.delegate.getStreetAddress();
-  }
-  
-  public void setStreetAddress(String streetAddress)
-  {
-    this.delegate.setStreetAddress(streetAddress);
-  }
-  
-  public String getPostalCode()
-  {
-    return this.delegate.getPostalCode();
-  }
-  
-  public void setPostalCode(String postalCode)
-  {
-    this.delegate.setPostalCode(postalCode);
+    this.delegate.setLocaladdressid(localaddress);
   }
   
   public String getImage1()
@@ -253,16 +213,6 @@ public class User extends Feeduser {
   public void setGender(Gender gender)
   {
     this.delegate.setGender(gender);
-  }
-  
-  public Country getCountry()
-  {
-    return this.delegate.getCountry();
-  }
-  
-  public void setCountry(Country country)
-  {
-    this.delegate.setCountry(country);
   }
   
   public Howdidyoufindus getHowDidYouFindUs()
