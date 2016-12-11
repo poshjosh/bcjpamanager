@@ -18,10 +18,15 @@ package com.bc.jpa.util;
 import com.bc.jpa.JpaContext;
 import com.bc.jpa.TestApp;
 import com.bc.jpa.dao.BuilderForSelect;
-import com.bc.util.JsonFormat;
+import com.bc.util.JsonBuilder;
+import com.idisc.pu.entities.Archivedfeed;
 import com.idisc.pu.entities.Feed;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import junit.framework.TestCase;
 import org.junit.Test;
 
@@ -47,58 +52,33 @@ public class EntityMapBuilderImplTest extends TestCase {
 
     @Test
     public void testAll() {
+        
         JpaContext jpaContext = TestApp.getInstance().getIdiscJpaContext();
+        
         BuilderForSelect<Feed> dao = jpaContext.getBuilderForSelect(Feed.class);
+        
         List<Feed> found = dao.descOrder(Feed.class, "feeddate").getResultsAndClose(0, 3);
-        EntityMapBuilderImpl instance = new EntityMapBuilderImpl(false, 0, 0);
+        
+        EntityMapBuilder instance;
+//        instance = new EntityMapBuilderImpl(false, 0, 0);
+        Set<Class> ignore = new HashSet(Arrays.asList(Archivedfeed.class));
+        instance = new EntityMapBuilderImpl(false, Integer.MAX_VALUE, 10, null, ignore);
+        
         for(Feed feed : found) {
             
-            feed.setContent(null);
             Map map = instance.build(Feed.class, feed);
-            map.remove("content");
+            map.put("content", "[DUMMY CONTENT]");
+        
+            try{
+                JsonBuilder jsonBuilder = new JsonBuilder(true);
+                jsonBuilder.appendJSONString(map, System.out);
+            }catch(IOException e) {
+                e.printStackTrace();
+            }
             
-            JsonFormat jsonFmt = new JsonFormat(true);
-
-            String json = jsonFmt.toJSONString(map);
-            
-System.out.println(json);            
+//            JsonFormat jsonFmt = new JsonFormat(true);
+//            String json = jsonFmt.toJSONString(map);
+//System.out.println(json);            
         }
     }
 }
-/**
- * 
-    public void testBuild() {
-        
-        System.out.println("build");
-        
-        Sitetype sitetype = new Sitetype();
-        sitetype.setSitetype("web");
-        sitetype.setSitetypeid((short)1);
-        
-        Country country = new Country();
-        country.setCountry("Nigeria");
-        country.setCountryid((short)566);
-        country.setCodeIso2("NG");
-        country.setCodeIso3("NGA");
-        
-        Site site = new Site();
-        site.setSiteid(1);
-        site.setIconurl("http://www.looseboxes.com/images/appicon.jpg");
-        site.setDatecreated(new Date());
-        site.setSitetypeid(sitetype);
-        site.setCountryid(country);
-        
-        EntityMapBuilderImpl instance = new EntityMapBuilderImpl();
-        
-        Map map = instance.build(Site.class, site);
-
-//System.out.println(map.toString().replace(", ", "\n, "));        
-
-        JsonFormat jsonFmt = new JsonFormat(true);
-        
-        String json = jsonFmt.toJSONString(map);
-        
-System.out.println(json);
-    }
- * 
- */
