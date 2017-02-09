@@ -4,14 +4,10 @@ import com.bc.util.XLogger;
 import com.bc.jpa.exceptions.IllegalOrphanException;
 import com.bc.jpa.exceptions.NonexistentEntityException;
 import com.bc.jpa.exceptions.PreexistingEntityException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.logging.Level;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Query;
@@ -31,40 +27,11 @@ import javax.persistence.criteria.Root;
  * @version  2.0
  * @since    2.0
  */
-public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
+public class BaseEntityController<E, e> extends EntityUpdaterImpl<E, e> implements EntityControllerBase<E, e> {
 
-    private Method [] accessViaGetter_methods;
-    
-    private Class entityClass;
-    
-    private final JpaContext jpaContext;
-    
-    public BaseEntityController(
-            JpaContext ctx, 
-            Class<E> entityClass) {
-    
-        this.jpaContext = Objects.requireNonNull(ctx);
+    public BaseEntityController(JpaContext jpaContext, Class<E> entityClass) {
         
-        this.entityClass = Objects.requireNonNull(entityClass);
-    }
-
-    @Override
-    public EntityManagerFactory getEntityManagerFactory() {
-        return this.jpaContext.getEntityManagerFactory(entityClass);
-    }
-
-    @Override
-    public EntityManager getEntityManager() {
-        return getEntityManagerFactory().createEntityManager();
-    }
-    
-    /**
-     * Simply throws UnsupportedOperationException
-     * @deprecated 
-     */
-    @Override
-    public void setDatabaseName(String databaseName) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        super(jpaContext, entityClass);
     }
     
     @Override
@@ -340,6 +307,8 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
     /**
      * The value of the {@link #resultType} variable has no effect on 
      * this method's logic.
+     * @param id
+     * @return 
      */
     @Override
     public E find(e id) {
@@ -354,6 +323,7 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
     /**
      * The value of the {@link #resultType} variable has no effect on 
      * this method's logic.
+     * @return 
      */
     @Override
     public List<E> find() {
@@ -363,6 +333,9 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
     /**
      * The value of the {@link #resultType} variable has no effect on 
      * this method's logic.
+     * @param maxResults
+     * @param firstResult
+     * @return 
      */
     @Override
     public List<E> find(int maxResults, int firstResult) {
@@ -400,217 +373,29 @@ public class BaseEntityController<E, e> implements EntityControllerBase<E, e> {
         }
     }
     
-    /**
-     * @param entity Entity whose Id is to be returned
-     * @return The id of the specified entity
-     * @throws IllegalArgumentException If no method matching the  
-     * {@link #getIdColumnName() idColumnName} was found
-     * @throws UnsupportedOperationException if {@link java.lang.reflect.Method#invoke(java.lang.Object, java.lang.Object[])}
-     * throws an exception
-     */
-    @Override
-    public e getId(E entity) 
-            throws IllegalArgumentException, UnsupportedOperationException {
-        return (e)this.getValue(entity, this.getMetaData().getIdColumnName(this.entityClass));
-    }
-
-    /**
-     * @param entity Entity whose value is to be returned
-     * @param columnName The columnName matching the field whose value is 
-     * to be returned
-     * @return The value of the field whose name matches the specified columnName
-     * @throws IllegalArgumentException If no method matching the specified
-     * columnName was found
-     * @throws UnsupportedOperationException if {@link java.lang.reflect.Method#invoke(java.lang.Object, java.lang.Object[])}
-     * throws an exception
-     */
-    @Override
-    public Object getValue(E entity, String columnName) 
-            throws IllegalArgumentException, UnsupportedOperationException {
-
-XLogger.getInstance().log(Level.FINER, "Entity class. From controller: {0}, From entity: {1}", 
-        this.getClass(), this.getEntityClass(), entity.getClass());
-
-        if(columnName == null) {
-            throw new NullPointerException();
-        }
-        if(entity == null) {
-            throw new NullPointerException();
-        }
-        
-        Method method = null;
-        try{
-            
-            method = JpaUtil.getMethod(
-                    false, this.getMethods(), columnName);
-            
-XLogger.getInstance().log(Level.FINER, "Entity: {0}, Column name: {1}, Getter method: {2}",
-this.getClass(), entity, columnName, (method==null?null:method.getName()));
-
-            if(method != null) {
-                return method.invoke(entity);
-            }
-            
-        }catch(IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            
-            StringBuilder builder = new StringBuilder("Error getting entity value.");
-            builder.append(" Entity: ").append(entity);
-            builder.append(", Method: ").append(method==null?null:method.getName());
-            builder.append(", Column: ").append(columnName);
-
-            throw new UnsupportedOperationException(builder.toString(), e);
-        }
-        
-        if(method == null) {
-            throw new IllegalArgumentException(
-                    "Could not find matching getter method for field: "+
-                    columnName+" in class: "+entity.getClass());
-        }
-        
-        return null;
-    }
-
-    /**
-     * @param entity Entity whose Id is to be updated with a new value
-     * @param id The new id
-     * @throws IllegalArgumentException If no method matching the specified
-     * {@link #getIdColumnName() idColumnName} was found
-     * @throws UnsupportedOperationException if {@link java.lang.reflect.Method#invoke(java.lang.Object, java.lang.Object[])}
-     * throws an exception
-     */
-    @Override
-    public void setId(E entity, e id) 
-            throws IllegalArgumentException, UnsupportedOperationException {
-        
-        this.setValue(entity, this.getMetaData().getIdColumnName(this.entityClass), id);
-    }
-
-    /**
-     * @throws IllegalArgumentException If no method matching the specified
-     * columnName was found
-     * @throws UnsupportedOperationException if {@link java.lang.reflect.Method#invoke(java.lang.Object, java.lang.Object[])}
-     * throws an exception
-     */
-    @Override
-    public void setValue(E entity, String columnName, Object columnValue) 
-            throws IllegalArgumentException, UnsupportedOperationException {        
-        
-XLogger.getInstance().log(Level.FINER, "Entity class. From controller: {0}, From entity: {1}", 
-this.getClass(), this.getEntityClass(), entity.getClass());
-        
-        if(columnName == null) {
-            throw new NullPointerException();
-        }
-        if(entity == null) {
-            throw new NullPointerException();
-        }
-        Method method = null;
-        try{
-            
-            method = JpaUtil.getMethod(
-                    true, this.getMethods(), columnName);
-            
-XLogger.getInstance().log(Level.FINER, "Entity: {0}, Column name: {1}, Column value: {2}, Setter method: {3}", 
-this.getClass(), entity, columnName, columnValue, (method==null?null:method.getName()));
-
-            if(method != null) {
-                
-                // We do this because MySQL returns Byte for tinyint where as 
-                // jpa designates the columns as shorts
-                //
-                // Only one parameter expected
-                if(columnValue != null) {
-                    columnValue = this.convertPrimitive(method.getParameterTypes()[0], columnValue);
-                }
-
-                method.invoke(entity, columnValue);
-            }
-        }catch(Exception e) {
-            
-            StringBuilder builder = new StringBuilder("Error setting entity value.");
-            builder.append(" Entity: ").append(entity);
-            builder.append(", Method: ").append(method==null?null:method.getName());
-            builder.append(", Column: ").append(columnName);
-            builder.append(", Value: ").append(columnValue);
-            builder.append(", Value type: ").append(columnValue==null?null:columnValue.getClass());
-            builder.append(", Expected type: ").append(method==null?null:method.getParameterTypes()[0]);
-
-            throw new UnsupportedOperationException(builder.toString(), e);
-        }
-
-        if(method == null) {
-            throw new IllegalArgumentException("Could not find matching method for: "+columnName+" in class: "+this.getEntityClass());
-        }
-    }
-
-    private Object convertPrimitive(Class type, Object value) {
-        if(value == null) {
-            return value;
-        }
-        if((type == short.class || type == Short.class) && !(value instanceof Short)) {
-            value = Short.valueOf(value.toString());
-        }else if((type == int.class || type == Integer.class) && !(value instanceof Integer)) {
-            value = Integer.valueOf(value.toString());
-        }else if((type == long.class || type == Long.class) && !(value instanceof Long)) {
-            value = Long.valueOf(value.toString());
-        }else if((type == float.class || type == Float.class) && !(value instanceof Float)) {
-            value = Float.valueOf(value.toString());
-        }else if((type == double.class || type == Double.class) && !(value instanceof Double)) {
-            value = Double.valueOf(value.toString());
-        }else if((type == boolean.class || type == Boolean.class) && !(value instanceof Boolean)) {
-            value = Boolean.valueOf(value.toString());
-        }
-        return value;
-    }
-    
-    public Method[] getMethods() {
-        if(accessViaGetter_methods == null) {
-            accessViaGetter_methods = this.entityClass.getMethods();
-        }
-        return accessViaGetter_methods;
-    }
-
     @Override
     public String getDatabaseName() {
-        return this.getMetaData().getDatabaseName(this.entityClass);
+        return this.getMetaData().getDatabaseName(this.getEntityClass());
     }
 
     @Override
     public String getTableName() {
-        return this.getMetaData().getTableName(this.entityClass);
+        return this.getMetaData().getTableName(this.getEntityClass());
     }
     
-    @Override
-    public void setTableName(String tableName) {
-        final JpaMetaData metaData = this.getMetaData();
-        String databaseName = metaData.getDatabaseName(entityClass);
-        Class aClass = metaData.getEntityClass(databaseName, tableName);
-        // Use this method as it performs important logic
-        this.setEntityClass(aClass);
-    }
-
     @Override
     public String getIdColumnName() {
-        return this.getMetaData().getIdColumnName(this.entityClass);
+        return this.getMetaData().getIdColumnName(this.getEntityClass());
     }
-    
-    @Override
-    public Class<E> getEntityClass() {
-        return this.entityClass;
-    }
-    
-    @Override
-    public void setEntityClass(Class<E> aClass) {
-        if(this.entityClass != aClass) {
-            this.checkRelationship(aClass);
-            this.accessViaGetter_methods = null;
-        }
-        this.entityClass = aClass;
-    }
+}
+/**
+ * 
     
     private void checkRelationship(Class anEntityClass) {
         
-        if(this.entityClass == null || anEntityClass == null) {
+        final Class entityClass = this.getEntityClass();
+        
+        if(entityClass == null || anEntityClass == null) {
             return;
         }
         
@@ -635,19 +420,11 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
         if(!match) {
             StringBuilder msg = new StringBuilder();
             msg.append("Tried to replace the current entity class: ");
-            msg.append(this.entityClass);
+            msg.append(entityClass);
             msg.append(" with an incompatible class: ");
             msg.append(anEntityClass);
             throw new IllegalArgumentException(msg.toString());
         }
     }
-    
-    public final JpaContext getJpaContext() {
-        return this.jpaContext;
-    }
-
-    @Override
-    public final JpaMetaData getMetaData() {
-        return this.jpaContext.getMetaData();
-    }
-}
+ * 
+ */

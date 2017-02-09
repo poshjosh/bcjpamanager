@@ -16,7 +16,7 @@ import com.bc.jpa.exceptions.PreexistingEntityException;
  * @version  2.0
  * @since    2.0
  */
-public class RelatedEntityController extends DefaultEntityController {
+public class RelatedEntityController extends EntityControllerImpl {
 
     public RelatedEntityController(JpaContext jpaContext, Class referenceClass) {
     

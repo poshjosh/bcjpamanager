@@ -5,8 +5,6 @@ import com.bc.jpa.exceptions.NonexistentEntityException;
 import com.bc.jpa.exceptions.PreexistingEntityException;
 import java.util.Collection;
 import java.util.List;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 
 /**
  * @(#)EntityControllerBase.java   10-May-2014 14:53:48
@@ -20,7 +18,7 @@ import javax.persistence.EntityManagerFactory;
  * @version  2.0
  * @since    2.0
  */
-public interface EntityControllerBase<E, e> {
+public interface EntityControllerBase<E, e> extends EntityUpdater<E, e> {
     
     long count();
     
@@ -49,79 +47,8 @@ public interface EntityControllerBase<E, e> {
     List<E> find(int maxResults, int firstResult);
     
     String getDatabaseName();
-
-    Class<E> getEntityClass();
-    
-    EntityManager getEntityManager();
-    
-    EntityManagerFactory getEntityManagerFactory();
-    
-    JpaMetaData getMetaData();
-
-    /**
-     * @param entity Entity whose Id is to be returned
-     * @return The id of the specified entity
-     * @throws IllegalArgumentException If no method matching the  
-     * {@link #getIdColumnName() idColumnName} was found
-     * @throws UnsupportedOperationException if {@link java.lang.reflect.Method#invoke(java.lang.Object, java.lang.Object[])}
-     * throws an exception
-     */
-    e getId(E entity); 
     
     String getTableName();
     
     String getIdColumnName();
-
-    /**
-     * @param entity Entity whose value is to be returned
-     * @param columnName The columnName matching the field whose value is 
-     * to be returned
-     * @return The value of the field whose name matches the specified columnName
-     * @throws IllegalArgumentException If no method matching the specified
-     * columnName was found
-     * @throws UnsupportedOperationException if {@link java.lang.reflect.Method#invoke(java.lang.Object, java.lang.Object[])}
-     * throws an exception
-     */
-    Object getValue(E entity, String columnName) 
-            throws IllegalArgumentException, UnsupportedOperationException;
-
-    /**
-     * @param databaseName
-     * @deprecated 
-     */
-    @Deprecated
-    void setDatabaseName(String databaseName);
-
-    /**
-     * @param aClass
-     * @deprecated
-     */
-    @Deprecated
-    void setEntityClass(Class<E> aClass);
-    
-    /**
-     * @param entity Entity whose Id is to be updated with a new value
-     * @param id The new id
-     * @throws IllegalArgumentException If no method matching the specified
-     * {@link #getIdColumnName() idColumnName} was found
-     * @throws UnsupportedOperationException if {@link java.lang.reflect.Method#invoke(java.lang.Object, java.lang.Object[])}
-     * throws an exception
-     */
-    void setId(E entity, e id);
-    
-    /**
-     * @param tableName
-     * @deprecated
-     */
-    @Deprecated
-    void setTableName(String tableName);
-
-    /**
-     * @throws IllegalArgumentException If no method matching the specified
-     * columnName was found
-     * @throws UnsupportedOperationException if {@link java.lang.reflect.Method#invoke(java.lang.Object, java.lang.Object[])}
-     * throws an exception
-     */
-    void setValue(E entity, String columnName, Object columnValue)
-            throws IllegalArgumentException, UnsupportedOperationException;
 }

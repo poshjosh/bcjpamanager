@@ -78,49 +78,6 @@ JpaUtil.class, setter, referenceEntityClass, referencingEntityClass, output);
         return output;
     }
 
-    /**
-     * Methods of the {@link java.lang.Object} class are not considered
-     * @param setter boolean, if true only setter methods are considered
-     * @param method Method. The method for which a column with a name 
-     * matching the method name will be returned/
-     * @return A column whose name matches the input Method name, or null if
-     * no such column could be inferred.
-     */
-    public static void appendColumnName(boolean setter, Method method, StringBuilder buff) {
-
-        final String prefix = setter ? "set" : "get";
-        
-        String methodName = method.getName();
-        
-        if(method.getDeclaringClass() == Object.class || prefix != null && 
-                !methodName.startsWith(prefix)) {
-        
-            return;
-            
-        }else{
-        
-            final int prefixLen = prefix == null ? 0 : prefix.length();
-            final int len = methodName.length();
-
-            boolean doneFirst = false;
-            for(int i=0; i<len; i++) {
-
-                if(i < prefixLen) {
-                    continue;
-                }
-
-                char ch = methodName.charAt(i);
-
-                if(!doneFirst) {
-                    doneFirst = true;
-                    ch = Character.toLowerCase(ch);
-                }
-
-                buff.append(ch);
-            }
-        }
-    }
-
     public static Object getValue(Class aClass, 
             Object entity, Field [] fields, String columnName) {
         

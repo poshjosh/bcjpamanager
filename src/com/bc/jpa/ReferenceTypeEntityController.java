@@ -20,7 +20,7 @@ import java.util.Collection;
  * @since    2.0
  */
 public abstract class ReferenceTypeEntityController<E, e, X, Y> 
-        extends DefaultEntityController<E, e>
+        extends EntityControllerImpl<E, e>
         implements EntityController<E, e> {
     
     public ReferenceTypeEntityController(JpaContext jpaContext, Class<E> entityClass) {

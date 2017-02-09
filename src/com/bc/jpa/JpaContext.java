@@ -114,4 +114,6 @@ public interface JpaContext {
     JpaMetaData getMetaData();
     
     EnumReferences getEnumReferences();
+    
+    <E> EntityUpdater<E, Object> getEntityUpdater(Class<E> entityClass);
 }

@@ -1,5 +1,6 @@
 package com.bc.jpa;
 
+import com.bc.jpa.dao.eclipselink.BuilderForSelectEclipselinkOptimized;
 import com.bc.jpa.dao.DatabaseFormat;
 import com.bc.jpa.util.PersistenceURISelector;
 import com.bc.jpa.fk.EnumReferences;
@@ -111,6 +112,11 @@ public class JpaContextImpl implements JpaContext, Serializable {
                 factory.close();
             }
         }
+    }
+
+    @Override
+    public <E> EntityUpdater<E, Object> getEntityUpdater(Class<E> entityClass) {
+        return new EntityUpdaterImpl(this, entityClass);
     }
 
     /**
@@ -312,7 +318,7 @@ cls, val.getClass(), val, refType, ref);
 //System.out.println(entityClass.getName()+" is reference: "+isReference+", is referencing: "+isReferencing);
         
         if(!isReference && !isReferencing) {
-            controller = new DefaultEntityController<>(this, entityClass);
+            controller = new EntityControllerImpl<>(this, entityClass);
         }else if(isReference) {        
             controller = new ReferenceEntityController<>(this, entityClass);
         }else if(isReferencing) {        

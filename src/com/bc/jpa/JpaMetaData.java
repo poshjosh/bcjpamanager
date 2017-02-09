@@ -3,6 +3,7 @@ package com.bc.jpa;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 import javax.persistence.JoinColumn;
@@ -28,6 +29,7 @@ public interface JpaMetaData {
     public static final int COLUMN_TYPE_NAME = 6;
     public static final int COLUMN_SIZE = 7;
     public static final int COLUMN_NULLABLE = 11;
+    public static final int COLUMN_DEFAULT = 13;
 
     /**
      * @return The URI to the persistence.xml data
@@ -95,4 +97,8 @@ public interface JpaMetaData {
     String getReferenceColumn(Class reference, Class referencing);
 
     String [] getReferencingColumns(Class referencing, String referenceColumn);
+    
+    int [] fetchIntMetaData(Class entityClass, int resultSetDataIndex) throws SQLException;
+    
+    String [] fetchStringMetaData(Class entityClass, int resultSetDataIndex) throws SQLException;
 }

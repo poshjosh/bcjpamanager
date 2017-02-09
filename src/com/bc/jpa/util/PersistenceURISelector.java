@@ -60,11 +60,14 @@ public class PersistenceURISelector {
         
         URI uri = null;
         
+XLogger.getInstance().log(Level.FINE, "Selecting persistence files for name: {0}", this.getClass(), fname);                
+        
         Enumeration<URL> en = classLoader.getResources(fname);
         
         while(en.hasMoreElements()) {
             
             URL url = en.nextElement();
+
             try{
                 uri = url.toURI();
             }catch(java.net.URISyntaxException shouldNotHappen) { 
@@ -85,6 +88,8 @@ public class PersistenceURISelector {
                 uri = file.toURI();
 XLogger.getInstance().log(Level.INFO, "Created URI: {0}, from filename: {1}", 
         this.getClass(), uri, fname);
+            }else{
+XLogger.getInstance().log(Level.WARNING, "Does not exist file: {0}", this.getClass(), fname);
             }
         }
         

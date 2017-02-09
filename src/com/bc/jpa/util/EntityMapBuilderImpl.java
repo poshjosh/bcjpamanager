@@ -1,6 +1,5 @@
 package com.bc.jpa.util;
 
-import com.bc.jpa.JpaUtil;
 import com.bc.util.XLogger;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -131,7 +130,7 @@ logger.log(level, "Building Map for entity: {0}", cls, entity);
         for(Method method:methods) {
             
             buff.setLength(0);
-            JpaUtil.appendColumnName(false, method, buff);
+            this.appendColumnName(false, method, buff);
             String key = buff.length() == 0 ? null : buff.toString();
             
             boolean foundGetterMethod = key != null;
@@ -349,6 +348,49 @@ this.getClass(), type.getName(), (depth<maxDepth), !typesToIgnore.contains(type)
         logger.log(Level.WARNING, msg.toString(), cls, e);
     }
 
+    /**
+     * Methods of the {@link java.lang.Object} class are not considered
+     * @param setter boolean, if true only setter methods are considered
+     * @param method Method. The method for which a column with a name 
+     * matching the method name will be returned/
+     * @return A column whose name matches the input Method name, or null if
+     * no such column could be inferred.
+     */
+    private void appendColumnName(boolean setter, Method method, StringBuilder buff) {
+
+        final String prefix = setter ? "set" : "get";
+        
+        String methodName = method.getName();
+        
+        if(method.getDeclaringClass() == Object.class || prefix != null && 
+                !methodName.startsWith(prefix)) {
+        
+            return;
+            
+        }else{
+        
+            final int prefixLen = prefix == null ? 0 : prefix.length();
+            final int len = methodName.length();
+
+            boolean doneFirst = false;
+            for(int i=0; i<len; i++) {
+
+                if(i < prefixLen) {
+                    continue;
+                }
+
+                char ch = methodName.charAt(i);
+
+                if(!doneFirst) {
+                    doneFirst = true;
+                    ch = Character.toLowerCase(ch);
+                }
+
+                buff.append(ch);
+            }
+        }
+    }
+    
     public final boolean isNullsAllowed() {
         return nullsAllowed;
     }

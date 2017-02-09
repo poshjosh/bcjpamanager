@@ -22,7 +22,6 @@ import java.util.Properties;
 import java.util.logging.Level;
 import javax.persistence.Column;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
@@ -833,7 +832,8 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
                 type == java.util.List.class;
     }
 
-    private int [] fetchIntMetaData(Class entityClass, int resultSetDataIndex) throws SQLException {
+    @Override
+    public int [] fetchIntMetaData(Class entityClass, int resultSetDataIndex) throws SQLException {
         
         final IntegerArray intArray = new IntegerArray(30);
         
@@ -870,7 +870,8 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
         }
     }
 
-    private String [] fetchStringMetaData(Class entityClass, int resultSetDataIndex) throws SQLException {
+    @Override
+    public String [] fetchStringMetaData(Class entityClass, int resultSetDataIndex) throws SQLException {
         
         final List<String> list = new LinkedList<>();
         
@@ -906,7 +907,10 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
             entityManager.close();
         }
     }
-    
+}
+/**
+ * 
+
     private int [] fetchIntMetaDataX_old(Class entityClass, int resultSetDataIndex) throws SQLException {
 
         final String [] columnNames = this.getColumnNames(entityClass);
@@ -954,9 +958,7 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
             entityManager.close();
         }
     }
-}
-/**
- * 
+
     private Class[] getReferencingClassesOld(Class reference) {
         Field [] fields = reference.getDeclaredFields();
         List<Class> refingClasses = null;
