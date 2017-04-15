@@ -35,6 +35,7 @@ import com.bc.jpa.dao.BuilderForUpdate;
 import com.bc.jpa.dao.BuilderForUpdateImpl;
 import com.bc.jpa.dao.Dao;
 import com.bc.jpa.dao.DaoImpl;
+import java.net.URISyntaxException;
 
 /**
  * @(#)DefaultControllerFactory.java   28-Jun-2014 18:47:01
@@ -61,6 +62,10 @@ public class JpaContextImpl implements JpaContext, Serializable {
     private final SQLDateTimePatterns dateTimePatterns;
     
     private final EnumReferences enumReferences;
+
+    public JpaContextImpl() throws URISyntaxException {
+        this(Thread.currentThread().getContextClassLoader().getResource("META-INF/persistence.xml").toURI(), null);
+    }
     
     public JpaContextImpl(
             String persistenceFile, PersistenceURISelector.URIFilter uriFilter, 
@@ -434,7 +439,7 @@ logger.log(level, "ClassLoader to replace. Type: {0}, instance: {1}", cls, toRep
                     persistenceConfigURI.toURL(), (URLClassLoader)toReplace);
         }
         
-logger.log(level, "Using classloader: {0} to load persistence.xml file", cls, replacement.getClass().getName());
+logger.log(level, "Using classloader: {0} to load persistence '.xml' file", cls, replacement.getClass().getName());
 
         return replacement;
     }

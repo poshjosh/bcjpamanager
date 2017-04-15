@@ -19,6 +19,8 @@ import com.bc.jpa.JpaContext;
 import com.bc.jpa.TestApp;
 import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.util.JsonBuilder;
+import com.bc.util.MapBuilder;
+import com.bc.util.MapBuilderImpl;
 import com.idisc.pu.entities.Archivedfeed;
 import com.idisc.pu.entities.Feed;
 import java.io.IOException;
@@ -34,9 +36,9 @@ import org.junit.Test;
  *
  * @author Josh
  */
-public class EntityMapBuilderImplTest extends TestCase {
+public class MapBuilderImplTest extends TestCase {
     
-    public EntityMapBuilderImplTest(String testName) {
+    public MapBuilderImplTest(String testName) {
         super(testName);
     }
     
@@ -53,20 +55,23 @@ public class EntityMapBuilderImplTest extends TestCase {
     @Test
     public void testAll() {
         
-        JpaContext jpaContext = TestApp.getInstance().getIdiscJpaContext();
+        final JpaContext jpaContext = TestApp.getInstance().getIdiscJpaContext();
         
-        BuilderForSelect<Feed> dao = jpaContext.getBuilderForSelect(Feed.class);
+        final BuilderForSelect<Feed> dao = jpaContext.getBuilderForSelect(Feed.class);
         
-        List<Feed> found = dao.descOrder(Feed.class, "feeddate").getResultsAndClose(0, 3);
+        final List<Feed> found = dao.descOrder(Feed.class, "feeddate").getResultsAndClose(100, 3);
         
-        EntityMapBuilder instance;
-//        instance = new EntityMapBuilderImpl(false, 0, 0);
         Set<Class> ignore = new HashSet(Arrays.asList(Archivedfeed.class));
-        instance = new EntityMapBuilderImpl(false, Integer.MAX_VALUE, 10, null, ignore);
+        final MapBuilder mapBuilder = new MapBuilderImpl()
+                .recursionFilter(new EntityRecursionFilter())
+                .sourceType(Feed.class)
+                .nullsAllowed(false)
+                .maxCollectionSize(10)
+                .typesToIgnore(ignore);
         
         for(Feed feed : found) {
             
-            Map map = instance.build(Feed.class, feed);
+            final Map map = mapBuilder.source(feed).build();
             map.put("content", "[DUMMY CONTENT]");
         
             try{
@@ -75,10 +80,6 @@ public class EntityMapBuilderImplTest extends TestCase {
             }catch(IOException e) {
                 e.printStackTrace();
             }
-            
-//            JsonFormat jsonFmt = new JsonFormat(true);
-//            String json = jsonFmt.toJSONString(map);
-//System.out.println(json);            
         }
     }
 }

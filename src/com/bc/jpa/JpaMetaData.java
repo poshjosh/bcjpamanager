@@ -17,6 +17,58 @@ import javax.persistence.TemporalType;
  * terms found at http://www.looseboxes.com/legal/licenses/software.html
  */
 /**
+ * <code>
+ * <pre>
+ * @Entity
+ * @Table(name = "person")
+ * public class Person implements Serializable {
+ *   @Id
+ *   @Basic(optional = false)
+ *   @Column(name = "personid") 
+ *   private Integer personid;
+ * 
+ *   @JoinColumn(name = "nationalidcard", referencedColumnName = "nationalidcardid")
+ *   @OneToOne(optional = false, fetch = FetchType.LAZY)
+ *   private Nationalidcard nationalidcard;
+ * 
+ *   @OneToMany(cascade = CascadeType.ALL, mappedBy = "owner", fetch = FetchType.LAZY)
+ *   private List&lt;Vehicle&gt; vehicleList;
+ * }
+ * @Entity
+ * @Table(name = "vehicle")
+ * public class Vehicle implements Serializable {
+ *   @Id
+ *   @Basic(optional = false)
+ *   @Column(name = "vehicleid") 
+ *   private Integer vehicleid;
+ * 
+ *   @JoinColumn(name = "owner", referencedColumnName = "personid")
+ *   @ManyToOne(optional = false, fetch = FetchType.LAZY)
+ *   private Person owner;
+ * }
+ * @Entity
+ * @Table(name = "nationalidcard")
+ * public class Nationalidcard implements Serializable {
+ *   @Id
+ *   @Basic(optional = false)
+ *   @Column(name = "nationalidcardid") 
+ *   private Integer nationalidcardid;
+ * 
+ *   @OneToOne(cascade = CascadeType.ALL, mappedBy = "nationalidcard", fetch = FetchType.LAZY)
+ *   private Person person;
+ * }
+ * 
+ *  JpaMetaData metaData = jpaContext.getMetaData();
+ *  System.out.println("Ref col: "+metaData.getReferenceColumn(Person.class, Nationalidcard.class));
+ *  System.out.println("Ref class: "+metaData.getReferenceClass(Person.class, nationalidcard));
+ * </pre>
+ * </code>
+ * <p>
+ *    <b>Output</b><br/>
+ *    Ref col: null;<br/>
+ *    Ref class: Nationalidcard.class<br/>
+ * </p>
+ * 
  * @author   chinomso bassey ikwuagwu
  * @version  2.0
  * @since    2.0
@@ -45,6 +97,8 @@ public interface JpaMetaData {
     Properties getProperties(String persistenceUnitName) throws IOException;
     
     String [] getPersistenceUnitNames();
+    
+    Map<String, Class[]> getEntityClasses();
     
     Class [] getEntityClasses(String persistenceUnitName);
     
@@ -93,7 +147,7 @@ public interface JpaMetaData {
      * ReferencingColumnName=ReferenceColumnName
      */
     Map<String, String> getReferences(Class referencingClass);
-        
+    
     String getReferenceColumn(Class reference, Class referencing);
 
     String [] getReferencingColumns(Class referencing, String referenceColumn);

@@ -32,6 +32,10 @@ import java.util.logging.Level;
  * @author Chinomso Bassey Ikwuagwu on Jul 25, 2016 9:33:14 PM
  */
 public class AlternativePersistenceURLClassLoader extends java.net.URLClassLoader {
+    
+    private final boolean enablingLoggingCausesStackOverflow = true;
+    
+    private final boolean loggingEnabled = false;
 
     private final ResourceContext rc;
     
@@ -54,7 +58,9 @@ public class AlternativePersistenceURLClassLoader extends java.net.URLClassLoade
             level = Level.FINER;
             output = super.getResource(name);
         }
-XLogger.getInstance().log(level, "Input: {0}, output: {1}", this.getClass(), name, output);        
+if(loggingEnabled) {
+    XLogger.getInstance().log(level, "Input: {0}, output: {1}", this.getClass(), name, output);
+}        
         return output;
     }
     
@@ -68,7 +74,7 @@ XLogger.getInstance().log(level, "Input: {0}, output: {1}", this.getClass(), nam
             level = Level.FINER;
             output = super.getResources(name);
         }
-if(XLogger.getInstance().isLoggable(level, this.getClass())) {  
+if(loggingEnabled && XLogger.getInstance().isLoggable(level, this.getClass())) {  
     List outputList = toList(output);
     XLogger.getInstance().log(level, "Input: {0}, output: {1}", this.getClass(), name, outputList); 
     output = Collections.enumeration(outputList);

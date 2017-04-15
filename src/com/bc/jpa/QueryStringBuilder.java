@@ -6,7 +6,6 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
-import com.bc.jpa.JpaMetaData;
 
 /**
  * @(#)JPQL.java   27-Jun-2014 18:13:33

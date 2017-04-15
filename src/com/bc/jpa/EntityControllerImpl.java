@@ -2,7 +2,6 @@ package com.bc.jpa;
 
 import com.bc.jpa.exceptions.EntityInstantiationException;
 import com.bc.jpa.exceptions.NonexistentEntityException;
-import com.bc.jpa.util.EntityMapBuilderImpl;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -35,6 +34,7 @@ import javax.persistence.criteria.Root;
 import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.jpa.exceptions.IllegalOrphanException;
 import com.bc.jpa.exceptions.PreexistingEntityException;
+import com.bc.jpa.util.MapBuilderForEntity;
 import java.util.Objects;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.criteria.CriteriaQuery;
@@ -680,7 +680,7 @@ logger.log(Level.FINER, "Query: {0}", queryBuff);
                 throw new NonexistentEntityException("Search used parameters: "+where);
             }
             
-            EntityUpdaterImpl eb = new EntityUpdaterImpl(this.getJpaContext(), this.getEntityClass());
+            final EntityUpdater entityUpdater = new EntityUpdaterImpl(this.getJpaContext(), this.getEntityClass());
             
             List<E> output = null;
             for(E oldEntity:found) {
@@ -688,7 +688,7 @@ logger.log(Level.FINER, "Query: {0}", queryBuff);
                 E newEntity;
                 if(true) {
 //System.out.println("BEFORE Update. Row: "+new TreeMap(this.toMap(oldEntity)));
-                    eb.update(oldEntity, update, true);
+                    entityUpdater.update(oldEntity, update, true);
 //System.out.println(" AFTER Update. Row: "+new TreeMap(this.toMap(oldEntity)));
                     this.edit(oldEntity);
 //System.out.println(" AFTER DbEdit. Row: "+new TreeMap(this.toMap(oldEntity)));
@@ -736,8 +736,14 @@ logger.log(Level.FINER, "Query: {0}", queryBuff);
 
     @Override
     public void toMap(E entity, Map map, boolean nullsAllowed) {
-        
-        new EntityMapBuilderImpl(nullsAllowed, 1, 100, null, null).build(this.getEntityClass(), entity, map);
+        new MapBuilderForEntity()
+                .nullsAllowed(nullsAllowed)
+                .maxDepth(1)
+                .maxCollectionSize(10)
+                .sourceType(this.getEntityClass())
+                .source(entity)
+                .target(map)
+                .build();
     }
 
     @Override
