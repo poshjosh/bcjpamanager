@@ -16,14 +16,22 @@
 
 package com.bc.jpa.util;
 
-import com.bc.util.MapBuilderImpl;
+import com.bc.jpa.JpaContext;
+import com.bc.jpa.dao.SelectDao;
+import java.util.Collection;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on Apr 5, 2017 1:46:52 PM
+ * @author Chinomso Bassey Ikwuagwu on Apr 16, 2017 3:19:17 PM
  */
-public class MapBuilderForEntity extends MapBuilderImpl {
+public interface SelectDaoBuilder<T> {
 
-    public MapBuilderForEntity() { 
-        this.recursionFilter(new EntityRecursionFilter());
-    }
+    SelectDaoBuilder<T> jpaContext(JpaContext jpaContext);
+    
+    SelectDaoBuilder<T> resultType(Class<T> resultType);
+    
+    SelectDaoBuilder<T> textToFind(String text);
+    
+    SelectDaoBuilder<T> typesToSearch(Collection<Class> types);
+    
+    SelectDao<T> build();
 }

@@ -5,6 +5,7 @@ import com.bc.util.IntegerArray;
 import com.bc.util.XLogger;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -14,6 +15,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -235,7 +237,7 @@ if(logger.isLoggable(level, cls)) {
             }
         }
         
-        return output == null ? null : output.toArray(new String[output.size()]);
+        return output == null ? new String[0] : output.toArray(new String[output.size()]);
     }
 
     @Override
@@ -247,18 +249,19 @@ if(logger.isLoggable(level, cls)) {
         
         for(Field field:fields) {
             
-            this.addReferencing(field, referencing);
+            this.addReferencing(referenceClass, field, referencing);
         }
 
-        return referencing.isEmpty() ? null : referencing;
+        return referencing.isEmpty() ? Collections.EMPTY_MAP : referencing;
     }
     
-    private boolean addReferencing(Field field, Map<Class, String> buff) {
+    private boolean addReferencing(Class ref, Field field, Map<Class, String> buff) {
     
         if(buff == null) {
             throw new NullPointerException();
         }
         
+        Annotation ann;
         OneToMany one2many = field.getAnnotation(OneToMany.class);
 
         final Class referencingClass;
@@ -270,19 +273,19 @@ if(logger.isLoggable(level, cls)) {
             OneToOne one2one = field.getAnnotation(OneToOne.class);
             
             if(one2one == null) {
-                
+                ann = null;
                 mappedBy = null;
                 
                 referencingClass = null;
                 
             }else{
-                
+                ann = one2one;
                 mappedBy = one2one.mappedBy();
                 
                 referencingClass = field.getType();
             }
         }else{
-            
+            ann = one2many;
             mappedBy = one2many.mappedBy();
 
             // For field:         List<String> fieldname;
@@ -293,8 +296,10 @@ if(logger.isLoggable(level, cls)) {
             referencingClass = typeArgs == null ? null : (Class)typeArgs[0];
         }
         
-        if(referencingClass != null && mappedBy != null) {
+        if(referencingClass != null && mappedBy != null && !mappedBy.isEmpty()) {
             
+//System.out.println(ref.getSimpleName()+"#"+field.getName()+" has "+ann+" relationship mapped by "+mappedBy+" on "+(referencingClass==null?null:referencingClass.getSimpleName()));            
+        
             buff.put(referencingClass, mappedBy);
             
             return true;
@@ -329,7 +334,7 @@ if(logger.isLoggable(level, cls)) {
             refingClasses.add(refingClass);
         }
         
-        return refingClasses == null ? null : refingClasses.toArray(new Class[refingClasses.size()]);
+        return refingClasses == null ? new Class[0] : refingClasses.toArray(new Class[refingClasses.size()]);
     }
 
     @Override
@@ -348,7 +353,7 @@ if(logger.isLoggable(level, cls)) {
                 referencedColumns.add(referencedColumn);
             }
         }
-        return referencedColumns == null ? null : 
+        return referencedColumns == null ? new String[0] : 
                 referencedColumns.toArray(new String[referencedColumns.size()]);
     }
     
@@ -374,7 +379,7 @@ if(logger.isLoggable(level, cls)) {
             output.put(joinColumn, field);
         }
         
-        return output;
+        return output == null ? Collections.EMPTY_MAP : output;
     }
     
     /**
@@ -397,7 +402,7 @@ if(logger.isLoggable(level, cls)) {
             }
             references.put(joinColumn.name(), joinColumn.referencedColumnName());
         }
-        return references;
+        return references == null ? Collections.EMPTY_MAP: references;
     }
 
     @Override
@@ -449,7 +454,7 @@ if(logger.isLoggable(level, cls)) {
             }
             refClasses.add(refClass);
         }
-        return refClasses == null ? null : refClasses.toArray(new Class[refClasses.size()]);
+        return refClasses == null ? new Class[0] : refClasses.toArray(new Class[refClasses.size()]);
     }
     
     @Override
@@ -716,7 +721,7 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
                 output = null;
             }else{
                 if(referenceColumn != null && 
-                        !one2one.mappedBy().equals(referenceColumn)) {
+                        !referenceColumn.equals(one2one.mappedBy())) {
                     output = null;
                 }else{
                     output = field.getType();
@@ -724,7 +729,7 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
             }
         }else{
             if(referenceColumn != null && 
-                    !one2many.mappedBy().equals(referenceColumn)) {
+                    !referenceColumn.equals(one2many.mappedBy())) {
                 output = null;
             }else{
 
@@ -763,7 +768,7 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
             output = null;
         }
         
-        return output;
+        return output == null ? new Type[0] : output;
     }
 
     private String getReferencingColumn(Field field) {
@@ -779,7 +784,7 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
                 output = null;
             }
         }
-        return output;
+        return output == null || output.isEmpty() ? null : output;
     }
     
     private Class getReferenceClass(Field field) {

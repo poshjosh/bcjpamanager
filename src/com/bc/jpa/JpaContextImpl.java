@@ -110,6 +110,9 @@ public class JpaContextImpl implements JpaContext, Serializable {
 
     @Override
     public void close() {
+        if(!this.isOpen()) {
+            return;
+        }
         closed = true;
         Collection<EntityManagerFactory> factories = entityManagerFactories.values();
         for(EntityManagerFactory factory:factories) {
