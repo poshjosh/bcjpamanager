@@ -19,7 +19,6 @@ package com.bc.jpa.search;
 import com.bc.jpa.TestApp;
 import com.looseboxes.pu.entities.Product;
 import java.util.List;
-import javax.persistence.Query;
 import org.junit.Test;
 
 /**

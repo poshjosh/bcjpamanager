@@ -25,6 +25,8 @@ import javax.persistence.Entity;
  */
 public class EntityRecursionFilter implements MapBuilder.RecursionFilter {
 
+    public EntityRecursionFilter() { }
+
     @Override
     public boolean shouldRecurse(Class valueType, Object value) {
         

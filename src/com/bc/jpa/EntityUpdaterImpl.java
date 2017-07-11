@@ -218,7 +218,7 @@ this.getClass(), entityClass, entity.getClass());
         if(entity == null) {
             throw new NullPointerException();
         }
-        Method method = null;
+        Method method = null; 
         try{
             
             method = JpaUtil.getMethod(true, this.methods, columnName);

@@ -35,6 +35,8 @@ import com.bc.jpa.dao.BuilderForUpdate;
 import com.bc.jpa.dao.BuilderForUpdateImpl;
 import com.bc.jpa.dao.Dao;
 import com.bc.jpa.dao.DaoImpl;
+import com.bc.jpa.search.TextSearch;
+import com.bc.jpa.search.TextSearchImpl;
 import java.net.URISyntaxException;
 
 /**
@@ -172,6 +174,11 @@ public class JpaContextImpl implements JpaContext, Serializable {
         return delete;
     }
     
+    @Override
+    public TextSearch getTextSearch() {
+        return new TextSearchImpl(this);
+    }
+
     @Override
     public DatabaseFormat getDatabaseFormat() {
         DatabaseFormat databaseFormat = new DatabaseFormatImpl(this, this.dateTimePatterns);

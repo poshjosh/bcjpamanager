@@ -6,6 +6,7 @@ import java.net.URI;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import javax.persistence.JoinColumn;
 import javax.persistence.TemporalType;
 
@@ -96,11 +97,20 @@ public interface JpaMetaData {
      */
     Properties getProperties(String persistenceUnitName) throws IOException;
     
+    /**
+     * If persistence unit name is null then all persistence units will be 
+     * searched for the specified entity type
+     * @param persistenceUnitName The persistence unit name to search may be null
+     * @param entityType The entity type to find
+     * @return <code>true</code> if found, otherwise <code>false</code>
+     */
+    boolean isListedEntityType(String persistenceUnitName, Class entityType);
+    
     String [] getPersistenceUnitNames();
     
-    Map<String, Class[]> getEntityClasses();
-    
     Class [] getEntityClasses(String persistenceUnitName);
+    
+    Set<Class> getEntityClasses(Set<String> persistenceUnitNames);
     
     String getPersistenceUnitName(Class aClass);
     
@@ -147,6 +157,8 @@ public interface JpaMetaData {
      * ReferencingColumnName=ReferenceColumnName
      */
     Map<String, String> getReferences(Class referencingClass);
+    
+    Map<Class, String> getReferenceTypes(Class referencingClass);
     
     String getReferenceColumn(Class reference, Class referencing);
 

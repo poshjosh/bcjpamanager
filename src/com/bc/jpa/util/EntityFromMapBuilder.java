@@ -23,6 +23,16 @@ import java.util.Map;
  */
 public interface EntityFromMapBuilder {
     
+    interface Formatter{
+        
+        Formatter NO_OP = new Formatter() {
+            @Override
+            public Object format(Object entity, String column, Object value) { return value; }
+        };
+        
+        Object format(Object entity, String column, Object value);
+    }
+    
     interface ResultHandler{
         
         ResultHandler NO_OP = new ResultHandler() {
@@ -33,7 +43,15 @@ public interface EntityFromMapBuilder {
         void handleResult(Map src, Object result);
     }
 
+    EntityFromMapBuilder source(boolean lenient);
+    
     EntityFromMapBuilder source(Map source);
+    
+    EntityFromMapBuilder target(Object target);
+    
+    EntityFromMapBuilder resultBuffer(Map<Map, Object> buffer);
+    
+    EntityFromMapBuilder formatter(Formatter resultHandler);
     
     EntityFromMapBuilder resultHandler(ResultHandler resultHandler);
     

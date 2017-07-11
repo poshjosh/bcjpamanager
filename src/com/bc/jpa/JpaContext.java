@@ -12,6 +12,7 @@ import javax.persistence.JoinColumn;
 import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.jpa.dao.BuilderForUpdate;
 import com.bc.jpa.dao.Dao;
+import com.bc.jpa.search.TextSearch;
 
 /**
  * @(#)ControllerFactory.java   20-Mar-2014 18:09:39
@@ -49,6 +50,8 @@ public interface JpaContext {
     <T> BuilderForDelete<T> getBuilderForDelete(Class<T> entityType);
 
     <T> BuilderForUpdate<T> getBuilderForUpdate(Class<T> entityType);
+    
+    TextSearch getTextSearch();
     
     /**
      * @see #getReference(javax.persistence.EntityManager, java.lang.Class, java.util.Map, java.lang.String, java.lang.Object) 

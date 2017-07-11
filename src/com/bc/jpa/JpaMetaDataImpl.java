@@ -15,12 +15,16 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.Level;
 import javax.persistence.Column;
 import javax.persistence.EntityManager;
@@ -220,6 +224,29 @@ if(logger.isLoggable(level, cls)) {
         return pudom.getProperties(persistenceUnitName);
     }
     
+    /**
+     * If persistence unit name is null then all persistence units will be 
+     * searched for the specified entity type
+     * @param persistenceUnitName The persistence unit name to search may be null
+     * @param entityType The entity type to find
+     * @return <code>true</code> if found, otherwise <code>false</code>
+     */
+    @Override
+    public boolean isListedEntityType(String persistenceUnitName, Class entityType) {
+        final List<List<Class>> source;
+        if(persistenceUnitName != null) {
+            source = Collections.singletonList(Arrays.asList(this.getEntityClasses(persistenceUnitName)));
+        }else{
+            source = classes;
+        }
+        for(List<Class> puClasses : source) {
+            if(puClasses.contains(entityType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     @Override
     public String [] getReferencingColumns(Class referencing, String crossReferenceColumn) {
         
@@ -406,6 +433,34 @@ if(logger.isLoggable(level, cls)) {
     }
 
     @Override
+    public Map<Class, String> getReferenceTypes(Class referencingClass) {
+        
+        final Map<Class, String> output;
+        
+        final Map<String, String> refsData = this.getReferences(referencingClass);
+        
+        if(refsData == null || refsData.isEmpty()) {
+            
+            output = Collections.EMPTY_MAP;
+            
+        }else{
+            
+            output = new LinkedHashMap();
+            
+            final Set<String> referencingCols = refsData.keySet();
+            
+            for(String referencingCol : referencingCols) {
+                
+                final Class referenceClass = this.getReferenceClass(referencingClass, referencingCol);
+               
+                output.put(referenceClass, refsData.get(referencingCol));
+            }
+        }
+        
+        return output;
+    }
+    
+    @Override
     public String getReferenceColumn(Class reference, Class referencing) {
         Field [] fields = referencing.getDeclaredFields();
         String crossrefColumn = null;
@@ -463,12 +518,16 @@ if(logger.isLoggable(level, cls)) {
     }
     
     @Override
-    public Map<String, Class[]> getEntityClasses() {
-        Map<String, Class[]> entityClasses = new HashMap(puNames.size());
-        for(String puName : puNames) {
-            entityClasses.put(puName, this.getEntityClasses(puName));
+    public Set<Class> getEntityClasses(Set<String> persistenceUnitNames) {
+    
+        final Set<Class> entityClasses = new LinkedHashSet();
+        
+        for(String puName : persistenceUnitNames) {
+            
+            entityClasses.addAll(Arrays.asList(this.getEntityClasses(puName)));
         }
-        return entityClasses;
+        
+        return Collections.unmodifiableSet(entityClasses);
     }
     
     @Override

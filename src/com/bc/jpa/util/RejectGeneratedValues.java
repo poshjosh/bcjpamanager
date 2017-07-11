@@ -16,14 +16,21 @@
 
 package com.bc.jpa.util;
 
-import com.bc.util.MapBuilderImpl;
+import com.bc.util.MapBuilder;
+import java.lang.reflect.Method;
+import javax.persistence.GeneratedValue;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on Apr 5, 2017 1:46:52 PM
+ * @author Chinomso Bassey Ikwuagwu on May 25, 2017 10:57:57 PM
  */
-public class MapBuilderForEntity extends MapBuilderImpl {
+public class RejectGeneratedValues implements MapBuilder.MethodFilter{
 
-    public MapBuilderForEntity() { 
-        MapBuilderForEntity.this.recursionFilter(new EntityRecursionFilter());
+    @Override
+    public boolean accept(Class type, Object object, Method method, String columnName) {
+        try{
+            return type.getDeclaredField(columnName).getAnnotation(GeneratedValue.class) == null;
+        }catch(NoSuchFieldException e) {
+            return false;
+        }
     }
 }

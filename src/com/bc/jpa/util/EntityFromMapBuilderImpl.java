@@ -19,8 +19,12 @@ package com.bc.jpa.util;
 import com.bc.jpa.EntityUpdater;
 import com.bc.jpa.JpaContext;
 import com.bc.jpa.JpaMetaData;
+import com.bc.util.JsonFormat;
+import com.bc.util.ReflectionUtil;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -39,8 +43,16 @@ public class EntityFromMapBuilderImpl implements EntityFromMapBuilder {
     private final JpaContext jpaContext;
     
     private final Map<Class, Set<String>> entityColumnNames;
+    
+    private boolean lenient;
 
     private Map source;
+    
+    private Object targetEntity;
+    
+    private Map<Map, Object> resultBuffer;
+    
+    private Formatter formatter;
     
     private ResultHandler resultHandler;
     
@@ -55,21 +67,30 @@ public class EntityFromMapBuilderImpl implements EntityFromMapBuilder {
                 this.entityColumnNames.put(puClass, columnNames);
             }
         }
+        this.formatter = Formatter.NO_OP;
+        this.resultHandler = ResultHandler.NO_OP;
     }
     
     @Override
     public Object build() {
         
-        if(resultHandler == null) {
-            resultHandler = ResultHandler.NO_OP;
+        if(logger.isLoggable(Level.FINER)) {
+            logger.log(Level.FINER, "Building: {0}, from data:\n{1}", 
+                    new Object[]{this.targetEntity, this.source == null ? null : new JsonFormat(true, true, "  ").toJSONString(this.source)});
         }
         
-        return this.build(source);
+        return this.build(this.source, this.targetEntity);
     }
     
-    public Object build(Map src) {
+    public Object build(Map src, Object tgt) {
+//System.out.println("Building "+tgt+". from: "+src+". @"+this.getClass());
+        if(logger.isLoggable(Level.FINE)) {
+            logger.log(Level.FINE, "Building: {0}, from data: {1}", 
+                    new Object[]{tgt, src});
+        }
         
         Objects.requireNonNull(src);
+        Objects.requireNonNull(tgt);
         
         if(src.isEmpty()) {
             throw new IllegalArgumentException("Empty 'java.util.Map' not allowed as source");
@@ -77,54 +98,115 @@ public class EntityFromMapBuilderImpl implements EntityFromMapBuilder {
         
         final Set keys = src.keySet();
        
-        final Object tgt = this.createEntityFor(src.keySet());
-        
         final EntityUpdater updater = this.jpaContext.getEntityUpdater(tgt.getClass());
+        
+        final ReflectionUtil reflection = new ReflectionUtil();
         
         for(Object key : keys) {
             
-            Object val = src.get(key);
+            final String col = key.toString();
             
-            if(val instanceof Map) {
-                
-                val = this.build((Map)val);
+            Object val = src.get(key);
+                                           
+            final boolean update = !lenient || updater.getMethod(true, col) != null;
+            
+            if(logger.isLoggable(Level.FINER)) {
+                logger.log(Level.FINER, "For update: {0}, {1}#{2} = {3}", 
+                        new Object[]{update, tgt.getClass().getName(), col, val});
+            }
+//System.out.println("For update: "+update+". "+tgt.getClass().getName()+"#"+col+" = "+val+". @"+this.getClass());            
+            if(!update) {
+                continue;
             }
             
-            updater.setValue(tgt, key.toString(), val);
+            final Method getter = updater.getMethod(false, col);
+            
+             Objects.requireNonNull(getter, "Getter method for " + tgt.getClass().getName() + '#' + col + " is NULL");
+                
+            val = this.formatter.format(tgt, col, val);
+             
+            final Object updatedVal;
+            
+            if(val instanceof Collection) {
+            
+//System.out.println("- - - - - - - Collection type. "+tgt.getClass().getName()+"#"+col+" = "+val+". @"+this.getClass());                            
+
+                final Collection collection = (Collection)val;
+                
+                if(collection.isEmpty()) {
+                 
+                    updatedVal = val;
+                    
+                }else{    
+                    
+                    final Collection entityCollection = (Collection)reflection.newInstanceForCollectionType(collection.getClass());
+                    final Class dataType = (Class)reflection.getGenericReturnTypeArguments(getter)[0];
+
+                    for(Object e : collection) {
+
+                        final Map dataMap = (Map)e;
+
+//if("courseattendedList".equals(col)) {
+//    System.out.println("x x x x x x x Name: "+col+", element type: "+dataType.getName()+", data:\n"+new JsonFormat(true, true, "  ").toJSONString(dataMap));
+//}
+                        final Object dataEntity = this.build(dataMap, this.newInstance(dataType));
+                        
+                        entityCollection.add(dataEntity);
+                    }
+                    
+                    updatedVal = entityCollection;
+                }
+            }else if(val instanceof Map) {
+                
+//System.out.println("- - - - - - - Map type. "+tgt.getClass().getName()+"#"+col+" = "+val+". @"+this.getClass());                            
+
+                final Class valType = getter.getReturnType();
+
+                if(logger.isLoggable(Level.FINER)) {
+                    logger.log(Level.FINER, "Value type is: {0}, for {1}#{2} = {3}", 
+                            new Object[]{valType.getName(), tgt.getClass().getName(), col, val});
+                }
+
+                final Object builtVal = this.build((Map)val, this.newInstance(valType));
+
+                if(logger.isLoggable(Level.FINER)) {
+                    logger.log(Level.FINER, "Built: {0}, from {1}#{2} = {3}", 
+                            new Object[]{builtVal, tgt.getClass().getName(), col, val});
+                }
+
+                updatedVal = builtVal;
+                
+            }else{
+                
+                updatedVal = val;
+            }
+            
+            final Level LEVEL = Objects.equals(val, updatedVal) ? Level.FINER : Level.FINE;
+            if(logger.isLoggable(LEVEL)) {
+                logger.log(LEVEL, "Updated to: {0}, {1}#{2} = {3}", 
+                        new Object[]{updatedVal, tgt.getClass().getName(), col, val});
+            }
+            
+            updater.setValue(tgt, col, updatedVal);
+        }
+        
+        if(this.resultBuffer != null) {
+            this.resultBuffer.put(src, tgt);
         }
         
         this.resultHandler.handleResult(src, tgt);
         
+        logger.log(Level.FINER, "Built entity: {0}", new MapBuilderForEntity().maxDepth(1).nullsAllowed(true).source(tgt).build());
+        
         return tgt;
     }
     
-    public Object createEntityFor(Set names) {
-        final Class entityType = this.getEntityType(names);
-        return this.createEntityFor(entityType);
+    @Override
+    public EntityFromMapBuilder source(boolean lenient) {
+        this.lenient = lenient;
+        return this;
     }
-
-    public Object createEntityFor(Class entityType) {
-        try{
-            return entityType.getConstructor().newInstance();
-        }catch(NoSuchMethodException | SecurityException | InstantiationException | 
-                IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Class getEntityType(Set columnNames) {
-        for(Class entityType : this.entityColumnNames.keySet()) {
-            if(this.entityColumnNames.get(entityType).containsAll(columnNames)) {
-                if(logger.isLoggable(Level.FINE)) {
-                    logger.log(Level.FINE, "Found entity type: {0} for columns: {1}", 
-                            new Object[]{entityType.getName(), columnNames});
-                }
-                return entityType;
-            }
-        }
-        throw new IllegalArgumentException("Could not determine the entity type for this set of column names: "+columnNames);
-    }
-
+    
     @Override
     public EntityFromMapBuilder source(Map source) {
         this.source = source;
@@ -132,8 +214,39 @@ public class EntityFromMapBuilderImpl implements EntityFromMapBuilder {
     }
 
     @Override
+    public EntityFromMapBuilder target(Object target) {
+        if(target instanceof Class) {
+            this.targetEntity = this.newInstance((Class)target);
+        }else{
+            this.targetEntity = target;
+        }
+        return this;
+    }
+
+    @Override
+    public EntityFromMapBuilder resultBuffer(Map<Map, Object> buffer) {
+        this.resultBuffer = buffer;
+        return this;
+    }
+
+    @Override
+    public EntityFromMapBuilder formatter(Formatter formatter) {
+        this.formatter = formatter;
+        return this;
+    }
+    
+    @Override
     public EntityFromMapBuilder resultHandler(ResultHandler resultHandler) {
         this.resultHandler = resultHandler;
         return this;
+    }
+
+    public <T> T newInstance(Class<T> entityType) {
+        try{
+            return entityType.getConstructor().newInstance();
+        }catch(NoSuchMethodException | SecurityException | InstantiationException | 
+                IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
