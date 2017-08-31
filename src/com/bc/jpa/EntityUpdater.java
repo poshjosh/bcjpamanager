@@ -84,6 +84,8 @@ public interface EntityUpdater<E, e> {
      */
     void setValue(E entity, String columnName, Object columnValue) throws IllegalArgumentException, UnsupportedOperationException;
 
+    int update(E src, E target, boolean all);
+    
     int update(E entity, Map values, boolean convertCrossReferences) throws EntityInstantiationException;
 
     Method [] getMethods();

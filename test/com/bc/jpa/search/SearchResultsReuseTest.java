@@ -46,7 +46,6 @@ System.out.println("==================================Size: "+searchresults.getS
 System.out.println(product.getProductid()+"="+product.getProductName());                
             }
             
-            
     }
 }
 

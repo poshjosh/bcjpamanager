@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -76,6 +77,8 @@ import javax.persistence.TemporalType;
  */
 public interface JpaMetaData {
 
+    public static final int TABLE_CATALOG = 1;
+    public static final int TABLE_SCHEMA = 2;
     public static final int TABLE_NAME = 3;
     public static final int COLUMN_NAME = 4;
     public static final int COLUMN_DATA_TYPE = 5;
@@ -122,6 +125,12 @@ public interface JpaMetaData {
     
     String getDatabaseName(Class aClass);
     
+    boolean isAnyTableExisting(String persistenceUnit) throws SQLException;
+    
+    List<String> getExistingTables(String persistenceUnit) throws SQLException;
+    
+    boolean isExistingTable(Class entityType) throws SQLException;
+        
     String getTableName(Class aClass);
     
     String getIdColumnName(Class aClass);

@@ -26,10 +26,11 @@ import com.bc.jpa.search.TextSearch;
  * @version  2.0
  * @since    2.0
  */
-public interface JpaContext {
+public interface JpaContext extends AutoCloseable {
     
     boolean isOpen();
     
+    @Override
     void close();
     
     /**
@@ -41,6 +42,8 @@ public interface JpaContext {
     
     EntityManagerFactory getEntityManagerFactory(String persistenceUnit);    
         
+    EntityManagerFactory removeEntityManagerFactory(String persistenceUnit, boolean close);
+
     Dao getDao(Class entityType);
     
     <T> BuilderForSelect<T> getBuilderForSelect(Class<T> entityAndResultType);

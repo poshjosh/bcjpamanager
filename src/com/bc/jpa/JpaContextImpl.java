@@ -5,8 +5,6 @@ import com.bc.jpa.dao.DatabaseFormat;
 import com.bc.jpa.util.PersistenceURISelector;
 import com.bc.jpa.fk.EnumReferences;
 import com.bc.jpa.fk.EnumReferencesImpl;
-import com.bc.jpa.classloaders.AlternativePersistenceClassLoader;
-import com.bc.jpa.classloaders.AlternativePersistenceURLClassLoader;
 import com.bc.jpa.dao.BuilderForDelete;
 import com.bc.jpa.dao.BuilderForDeleteImpl;
 import com.bc.sql.MySQLDateTimePatterns;
@@ -16,20 +14,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.JoinColumn;
-import javax.persistence.Persistence;
 import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.jpa.dao.BuilderForUpdate;
 import com.bc.jpa.dao.BuilderForUpdateImpl;
@@ -38,6 +32,7 @@ import com.bc.jpa.dao.DaoImpl;
 import com.bc.jpa.search.TextSearch;
 import com.bc.jpa.search.TextSearchImpl;
 import java.net.URISyntaxException;
+import java.util.Properties;
 
 /**
  * @(#)DefaultControllerFactory.java   28-Jun-2014 18:47:01
@@ -301,13 +296,14 @@ cls, val.getClass(), val, refType, ref);
     @Override
     public EntityManager getEntityManager(String database) {
         final String persistenceUnit = this.metaData.getPersistenceUnitName(database);
-        return this.getEntityManagerFactory(persistenceUnit).createEntityManager();
+        final EntityManagerFactory emf = this.getEntityManagerFactory(persistenceUnit);
+        return emf.createEntityManager();
     }
 
     @Override
     public EntityManager getEntityManager(Class entityClass) {
-        String database = metaData.getDatabaseName(entityClass);
-        return this.getEntityManager(database);
+        final EntityManagerFactory emf = this.getEntityManagerFactory(entityClass);
+        return emf.createEntityManager();
     }
     
     @Override
@@ -349,7 +345,9 @@ cls, val.getClass(), val, refType, ref);
 
     @Override
     public EntityManagerFactory getEntityManagerFactory(Class entityClass) { 
+    
         final String persistenceUnit = this.metaData.getPersistenceUnitName(entityClass);
+        
         return this.getEntityManagerFactory(persistenceUnit);
     }
     
@@ -359,14 +357,28 @@ cls, val.getClass(), val, refType, ref);
         return this.getEntityManagerFactory(persistenceUnit, true);
     }
     
+    @Override
+    public EntityManagerFactory removeEntityManagerFactory(String persistenceUnit, boolean close) {
+        
+        final EntityManagerFactory factory = this.entityManagerFactories.remove(persistenceUnit);
+        
+        if(close && factory.isOpen()) {
+            factory.close();
+        }
+        
+        return factory;
+    }
+    
     public EntityManagerFactory getEntityManagerFactory(String persistenceUnit, boolean createIfNone) {
 
         EntityManagerFactory factory = entityManagerFactories.get(persistenceUnit);
         
         if(factory == null && createIfNone) {
             
-            factory = this.createEntityManagerFactory(persistenceUnit);
+            final Properties properties = this.getPersistenceUnitProperties(persistenceUnit);
             
+            factory = this.getEntityManagerFactoryProvider(properties).newInstance(persistenceUnit);
+
             if(factory != null) {
                 entityManagerFactories.put(persistenceUnit, factory);
             }else{
@@ -377,120 +389,12 @@ cls, val.getClass(), val, refType, ref);
         return factory;
     }
     
-    protected EntityManagerFactory createEntityManagerFactory(String persistenceUnit) {
-        
-        Properties props = null;
-        try{
-
-XLogger.getInstance().log(Level.INFO, 
-    "======================== Creating EntityManagerFactory =========================\n"+
-    "PersistenceUnit: {0}, URI: {1}",
-    this.getClass(), persistenceUnit, persistenceConfigURI);
-
-            props = metaData.getProperties(persistenceUnit);
-
-XLogger.getInstance().log(Level.FINE, "Properties: {0}", this.getClass(), props);
-
-        }catch(IOException e) {
-
-            XLogger.getInstance().log(Level.WARNING, "Exception loading properties for unit: "+persistenceUnit, this.getClass(), e);
-        }
-
-        final ClassLoader originalClassLoader = this.getContextClassLoader();
-
-        ClassLoader alternativeClassLoader = null;
-
-        try{
-
-            if(persistenceConfigURI != null && !persistenceConfigURI.toString().equals("META-INF/persistence.xml")) {
-                
-                alternativeClassLoader = this.getAlternativeClassLoader(originalClassLoader);
-                
-                this.setContextClassLoader(alternativeClassLoader);
-            }
-
-            if(props != null && !props.isEmpty()) {
-
-                return Persistence.createEntityManagerFactory(
-                        persistenceUnit, props);
-            }else{
-
-                return Persistence.createEntityManagerFactory(
-                        persistenceUnit);
-            }
-        }catch(MalformedURLException e) {
-
-            throw new RuntimeException("Exception compiling URL from URI: "+persistenceConfigURI, e);
-
-        }finally{
-
-            if(alternativeClassLoader != null) {
-
-                this.setContextClassLoader(originalClassLoader);
-            }
-        }
+    public EntityManagerFactoryProvider getEntityManagerFactoryProvider(Properties properties) {
+        return new EntityManagerFactoryProviderImpl(persistenceConfigURI, properties);
     }
     
-    protected ClassLoader getAlternativeClassLoader(ClassLoader toReplace) 
-            throws MalformedURLException {
-        
-XLogger logger = XLogger.getInstance();
-Level level = Level.FINE;
-Class cls = this.getClass();
-        
-logger.log(level, "ClassLoader to replace. Type: {0}, instance: {1}", cls, toReplace.getClass().getName(), toReplace);
-
-        ClassLoader replacement;
-        if(toReplace instanceof URLClassLoader) {
-            replacement = new AlternativePersistenceURLClassLoader(
-                    persistenceConfigURI.toURL(), (URLClassLoader)toReplace);
-        }else{
-            replacement = new AlternativePersistenceClassLoader(
-                    persistenceConfigURI.toURL(), (URLClassLoader)toReplace);
-        }
-        
-logger.log(level, "Using classloader: {0} to load persistence '.xml' file", cls, replacement.getClass().getName());
-
-        return replacement;
-    }
-    
-    /**
-     * Wraps <code>Thread.currentThread().setContextClassLoader(ClassLoader)</code> 
-     * into a doPrivileged block if security manager is present
-     */
-    private void setContextClassLoader(final ClassLoader classLoader) {
-        if (System.getSecurityManager() == null) {
-            Thread.currentThread().setContextClassLoader(classLoader);
-        }else {
-            java.security.AccessController.doPrivileged(
-                    new java.security.PrivilegedAction() {
-                        @Override
-                        public java.lang.Object run() {
-                            Thread.currentThread().setContextClassLoader(classLoader);
-                            return classLoader;
-                        }
-                    }
-            );
-        }
-    }
-
-    /**
-     * Wraps <code>Thread.currentThread().getContextClassLoader()</code> 
-     * into a doPrivileged block if security manager is present
-     */
-    private ClassLoader getContextClassLoader() {
-        if (System.getSecurityManager() == null) {
-            return Thread.currentThread().getContextClassLoader();
-        }else {
-            return  (ClassLoader) java.security.AccessController.doPrivileged(
-                    new java.security.PrivilegedAction() {
-                        @Override
-                        public java.lang.Object run() {
-                            return Thread.currentThread().getContextClassLoader();
-                        }
-                    }
-            );
-        }
+    public Properties getPersistenceUnitProperties(String persistenceUnit) {
+        return new Properties();
     }
     
     @Override

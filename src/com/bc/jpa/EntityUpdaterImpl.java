@@ -76,15 +76,39 @@ public class EntityUpdaterImpl<E, e> implements EntityUpdater<E, e> {
     }
     
     @Override
-    public int update(E entity, Map values, boolean convertCrossReferences) 
+    public int update(E src, E target, boolean all) {
+        
+        int updateCount = 0;
+        
+        final String [] targetNames = this.getJpaContext().getMetaData().getColumnNames(target.getClass());
+        
+        for(String targetName : targetNames) {
+            
+            final Object srcValue = this.getValue(src, targetName);
+            
+            if(all || !Objects.equals(srcValue, this.getValue(target, targetName))) {
+                
+                this.setValue(target, targetName, srcValue);
+                
+                ++updateCount;
+            }
+        }
+        
+        return updateCount;
+    }
+    
+    @Override
+    public int update(E entity, Map row, boolean convertCrossReferences) 
             throws EntityInstantiationException {
         
         int updateCount = 0;
         
+XLogger.getInstance().log(Level.FINER, "Updating entity: {0} with values {1}", this.getClass(), entity, row);
+        
         try{
             
             Map<JoinColumn, Field> joinColumns;
-            if(convertCrossReferences && !values.isEmpty()) {
+            if(convertCrossReferences && !row.isEmpty()) {
                 joinColumns = jpaContext.getMetaData().getJoinColumns(entityClass);
             }else{
                 joinColumns = null;
@@ -92,7 +116,7 @@ public class EntityUpdaterImpl<E, e> implements EntityUpdater<E, e> {
             
             final EntityManager em = jpaContext.getEntityManager(this.entityClass);
             
-            for(Map.Entry entry:(Set<Map.Entry>)values.entrySet()) {
+            for(Map.Entry entry:(Set<Map.Entry>)row.entrySet()) {
                 String col = entry.getKey().toString();
                 Object val = entry.getValue();
                 if(convertCrossReferences && (joinColumns != null && !joinColumns.isEmpty())) {

@@ -3,7 +3,6 @@ package com.bc.jpa;
 import com.bc.jpa.exceptions.EntityInstantiationException;
 import com.bc.jpa.exceptions.NonexistentEntityException;
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,13 +13,11 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
-import javax.persistence.JoinColumn;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import org.eclipse.persistence.config.QueryHints;
@@ -451,7 +448,7 @@ logger.log(Level.FINEST, "After converting to result type, results: {0}", result
                 qb.orderBy(orderBy);
             }
             
-            TypedQuery<E> tq = qb.createQuery();
+            TypedQuery<E> tq = qb.createQuery(); 
             
             if (offset > 0) {
                 tq.setFirstResult(offset);
@@ -750,42 +747,9 @@ logger.log(Level.FINER, "Query: {0}", queryBuff);
     public int update(E entity, Map row, boolean convertCrossReferences) 
             throws EntityInstantiationException {
         
-        final Class entityType = this.getEntityClass();
+        final EntityUpdater updater = this.getJpaContext().getEntityUpdater(this.getEntityClass());
         
-        int updateCount = 0;
-
-if(logger.isLoggable(Level.FINER))        
-logger.log(Level.FINER, "Updating entity: {0} with values {1}", new Object[]{entity, row});                
-        
-        try{
-            
-            Map<JoinColumn, Field> joinColumns;
-            if(convertCrossReferences && !row.isEmpty()) {
-                joinColumns = this.getMetaData().getJoinColumns(entityType);
-            }else{
-                joinColumns = null;
-            }
-            
-            final EntityManager em = this.getEntityManager();
-            
-            for(Entry entry:(Set<Entry>)row.entrySet()) {
-                String col = entry.getKey().toString();
-                Object val = entry.getValue();
-                if(convertCrossReferences && (joinColumns != null && !joinColumns.isEmpty())) {
-                    Object ref = this.getJpaContext().getReference(em, entityType, joinColumns, col, val);
-                    if(ref != null) {
-                        val = ref;
-                    }
-                }
-                try{
-                    this.setValue(entity, col, val);
-                    ++updateCount;
-                }catch(IllegalArgumentException ignored) { }
-            }
-        }catch(Exception e) {
-            throw new EntityInstantiationException(e);
-        }
-        return updateCount;
+        return updater.update(entity, row, convertCrossReferences);
     }
 
     protected Query createQuery(EntityManager em, String queryString, 

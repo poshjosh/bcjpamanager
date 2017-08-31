@@ -13,21 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.bc.jpa;
 
-package com.bc.jpa.dom;
-
-import com.bc.dom.DOM;
-import java.util.List;
-import java.util.Properties;
+import javax.persistence.EntityManagerFactory;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on Jul 22, 2017 2:26:01 AM
+ * @author Chinomso Bassey Ikwuagwu on Jul 22, 2017 2:15:10 AM
  */
-public interface PersistenceDOM extends DOM {
+public interface EntityManagerFactoryProvider {
 
-    List<String> getPersistenceUnitNames();
-    
-    List<String> getClassNames(String persistenceUnit);
-    
-    Properties getProperties(String persistenceUnit); 
+    EntityManagerFactory newInstance(String persistenceUnit);
 }

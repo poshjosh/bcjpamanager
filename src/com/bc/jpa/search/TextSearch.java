@@ -52,6 +52,16 @@ public interface TextSearch {
      * @see #search(java.lang.Class, java.lang.String) 
      */
     <T> List<T> search(Class<T> entityType, Object value, int minimumParts, float factor);
+
+    /**
+     * Search all <code>text type</code> columns of the specified entity type
+     * for the specified text using the SQL <code>LIKE</code> keyword.
+     * @param <T> The generic type of the entity 
+     * @param entityType The type of the entity
+     * @param text The text to search for
+     * @return The list of entities matching the text that was searched
+     */
+    <T> List<T> search(Class<T> entityType, String text);
     
     /**
      * Search all <code>text type</code> columns of the specified entity type
@@ -65,16 +75,6 @@ public interface TextSearch {
      */
     public <T> List<T> search(Class<T> entityType, String text, Criteria.ComparisonOperator c);
 
-    /**
-     * Search all <code>text type</code> columns of the specified entity type
-     * for the specified text using the SQL <code>LIKE</code> keyword.
-     * @param <T> The generic type of the entity 
-     * @param entityType The type of the entity
-     * @param text The text to search for
-     * @return The list of entities matching the text that was searched
-     */
-    <T> List<T> search(Class<T> entityType, String text);
-    
     boolean search(Object searchIn, Object searchFor, boolean textTypesOnly);
     
     Collection<String> getColumnNamesToSearch(Class entityType);

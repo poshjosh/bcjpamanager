@@ -1,6 +1,6 @@
 package com.bc.jpa;
 
-import com.bc.jpa.dom.PersistenceDOM;
+import com.bc.jpa.dom.PersistenceDOMImpl;
 import com.bc.util.IntegerArray;
 import com.bc.util.XLogger;
 import java.io.IOException;
@@ -16,13 +16,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
@@ -103,55 +106,25 @@ import javax.persistence.TemporalType;
  */
 public class JpaMetaDataImpl implements JpaMetaData, Serializable {
     
-    private List<String> puNames;
-    
-    private List<String> jdbcUrls;
-
-    /**
-     * Format:
-     * {
-     *     {com.database1.Entity0.class, com.database1.Entity1.class},
-     *     {com.database2.Entity0.class, com.database2.Entity1.class},
-     * }
-     */
-    private List<List<Class>> classes;
-    
-    private List<List<String>> idFieldNames;
-    
-    private List<List<String>> idColumnNames;
+    private Map<String, List<Class>> puToClassesMap;
     
     private transient final JpaContext jpaContext;
 
     public JpaMetaDataImpl(JpaContext jpaContext) { 
-        
 XLogger logger = XLogger.getInstance();
 Level level = Level.FINE;
 Class cls = this.getClass();
 
-        this.jpaContext = jpaContext;
+        this.jpaContext = Objects.requireNonNull(jpaContext);
         
-long mb4 = Runtime.getRuntime().freeMemory();
-long tb4 = System.currentTimeMillis();
+        final PersistenceDOMImpl pudom = new PersistenceDOMImpl(jpaContext.getPersistenceConfigURI());
 
-        PersistenceDOM pudom = new PersistenceDOM(jpaContext.getPersistenceConfigURI());
-
-if(logger.isLoggable(level, cls)) {        
-    logger.log(level, "Loaded {0}, Used time: {1}, memory: {2}", cls, 
-    PersistenceDOM.class.getName(), (System.currentTimeMillis()-tb4), (mb4-Runtime.getRuntime().freeMemory()));        
-}
-
-        this.puNames = pudom.getPersistenceUnitNames();
+        final List<String> puNames = pudom.getPersistenceUnitNames();
         
-        this.jdbcUrls = new ArrayList<>(this.puNames.size());
+        this.puToClassesMap = new LinkedHashMap<>(puNames.size(), 1.0f);
         
-        this.classes = new ArrayList<>(this.puNames.size());
-        
-        for(String puName:this.puNames) {
+        for(String puName : puNames) {
 
-            Properties props = pudom.getProperties(puName);
-            String jdbcUrl = props.getProperty("javax.persistence.jdbc.url");
-            this.jdbcUrls.add(jdbcUrl);
-            
             List<String> puClsNames = pudom.getClassNames(puName);
             
             List<Class> puClasses = new ArrayList<>(puClsNames.size());
@@ -167,18 +140,11 @@ if(logger.isLoggable(level, cls)) {
                 }
             }
             
-            this.classes.add(puClasses);
+            this.puToClassesMap.put(puName, puClasses);
         }
+        
+        logger.log(level, "{0}", cls, this.puToClassesMap);
 
-if(logger.isLoggable(level, cls)) {        
-    for(int i=0; i<puNames.size(); i++) {        
-    logger.log(level, 
-    "Persistence unit: "+puNames.get(i)+", jdbc url: {0}\nclasses: {1}\nidFieldNames: {2}\nidColumnNames: {3}",
-    cls, jdbcUrls.get(i), classes.get(i), 
-        idFieldNames==null?null:idFieldNames.get(i), 
-        idColumnNames==null?null:idColumnNames.get(i));        
-    } 
-}
         // This must come last
         //
 //        for(List<Class> puClasses:this.classes) {
@@ -187,7 +153,7 @@ if(logger.isLoggable(level, cls)) {
 //           }
 //        }
     }
-    
+
     private void validate(Class entityClass) {
         boolean inputIsRefing = this.getReferenceClasses(entityClass) != null;
         boolean inputIsRef = this.getReferencingClasses(entityClass) != null;
@@ -220,7 +186,7 @@ if(logger.isLoggable(level, cls)) {
     
     @Override
     public Properties getProperties(String persistenceUnitName) throws IOException {
-        PersistenceDOM pudom = new PersistenceDOM(this.jpaContext.getPersistenceConfigURI());
+        PersistenceDOMImpl pudom = new PersistenceDOMImpl(this.jpaContext.getPersistenceConfigURI());
         return pudom.getProperties(persistenceUnitName);
     }
     
@@ -233,11 +199,11 @@ if(logger.isLoggable(level, cls)) {
      */
     @Override
     public boolean isListedEntityType(String persistenceUnitName, Class entityType) {
-        final List<List<Class>> source;
+        final Collection<List<Class>> source;
         if(persistenceUnitName != null) {
-            source = Collections.singletonList(Arrays.asList(this.getEntityClasses(persistenceUnitName)));
+            source = Collections.singleton(Arrays.asList(this.getEntityClasses(persistenceUnitName)));
         }else{
-            source = classes;
+            source = puToClassesMap.values();
         }
         for(List<Class> puClasses : source) {
             if(puClasses.contains(entityType)) {
@@ -514,7 +480,7 @@ if(logger.isLoggable(level, cls)) {
     
     @Override
     public String [] getPersistenceUnitNames() {
-        return this.puNames.toArray(new String[0]);
+        return this.puToClassesMap.keySet().toArray(new String[0]);
     }
     
     @Override
@@ -533,28 +499,20 @@ if(logger.isLoggable(level, cls)) {
     @Override
     public Class [] getEntityClasses(String persistenceUnitName) {
         
-        int index = this.puNames.indexOf(persistenceUnitName);
-        
-        if(index == -1) {
-            throw new IllegalArgumentException("Unexpected persistence unit: "+persistenceUnitName);
-        }
-        
-        List<Class> puClasses = this.classes.get(index);
+        final List<Class> puClasses = puToClassesMap.get(persistenceUnitName);
         
         return puClasses.toArray(new Class[0]);
     }
     
     @Override
     public Class getEntityClass(String database, String table) {
+        final String puName = this.getPersistenceUnitName(database);
+        final List<Class> dbClasses = this.puToClassesMap.get(puName);
         Class entityClass = null;
-        int index = this.indexOfDatabase(database);
-        if(index != -1) {
-            List<Class> dbClasses = this.classes.get(index);
-            for(Class dbClass:dbClasses) {
-                if(this.getTableName(dbClass).equals(table)) {
-                    entityClass = dbClass;
-                    break;
-                }
+        for(Class dbClass:dbClasses) {
+            if(this.getTableName(dbClass).equals(table)) {
+                entityClass = dbClass;
+                break;
             }
         }
 //Logger.getLogger(this.getClass().getName()).log(Level.FINER, 
@@ -569,7 +527,7 @@ if(logger.isLoggable(level, cls)) {
             throw new NullPointerException();
         }
         Class entityClass = null;
-        for(String puName:puNames) {
+        for(String puName : this.puToClassesMap.keySet()) {
             Class [] puClasses = this.getEntityClasses(puName);
 //System.out.println("PU: "+puName+", classes: "+(Arrays.toString(puClasses)));            
             for(Class puClass:puClasses) {
@@ -585,25 +543,63 @@ if(logger.isLoggable(level, cls)) {
     
     @Override
     public String getDatabaseName(Class aClass) {
-        
-        int []  posOf = this.positionOf(aClass);
-        
-        if(posOf == null) {
-            
-            return null;
-            
-        }else{
-            
-            int index = posOf[0];
-
-            if(index > -1) {
-                return this.getDatabaseNameFromUrl(this.jdbcUrls.get(index));
-            }else{
-                return null;
-            }
-        }
+        return this.getDatabaseName(this.getPersistenceUnitName(aClass));
     }
     
+    @Override
+    public boolean isExistingTable(Class entityType) throws SQLException {
+        boolean output = false;
+        final String tableName = this.getTableName(entityType);
+        if(tableName != null) {
+            final String [] tableNames = this.fetchStringMetaData(entityType, TABLE_NAME);
+            if(tableNames != null && tableNames.length != 0) {
+                for(String dbTable : tableNames) {
+                    output = tableName.equalsIgnoreCase(dbTable);
+//System.out.println("Existing: "+output+", table: "+tableName+" @"+this.getClass());                    
+                    if(output) {
+                        break;
+                    }
+                }
+            }
+        }        
+        return output;
+    }
+    
+    @Override
+    public boolean isAnyTableExisting(String persistenceUnit) throws SQLException {
+        boolean output = false;
+        final Class [] entityTypes = this.getEntityClasses(persistenceUnit);
+        if(entityTypes != null && entityTypes.length != 0) {
+            for(Class entityType : entityTypes) {
+                output = this.isExistingTable(entityType);
+                if(output) {
+                    break;
+                }
+            }
+        }
+        return output;
+    }
+    
+    @Override
+    public List<String> getExistingTables(String persistenceUnit) throws SQLException {
+        final List<String> output;
+        final Class [] entityTypes = this.getEntityClasses(persistenceUnit);
+        if(entityTypes == null || entityTypes.length == 0) {
+            output = Collections.EMPTY_LIST;
+        }else{
+            final Set<String> temp = new HashSet();
+            for(Class entityType : entityTypes) {
+                final String [] tableNames = this.fetchStringMetaData(entityType, TABLE_NAME);
+                if(tableNames == null || tableNames.length == 0) {
+                    continue;
+                }
+                temp.addAll(Arrays.asList(tableNames));
+            }
+            output = Collections.unmodifiableList(new ArrayList(temp));
+        }
+        return output;
+    }
+
     @Override
     public String getTableName(Class aClass) {
         Table table = (Table)aClass.getAnnotation(Table.class);
@@ -614,23 +610,20 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
     @Override
     public String getIdColumnName(Class aClass) {
         
-        final int [] pos = this.positionOf(aClass);
-        
-        final int x = pos[0]; final int y = pos[1];
-        
         String idColumnName = null;
         
-        if(this.idColumnNames != null && x < this.idColumnNames.size()) {
-            List<String> dbColNames = this.idColumnNames.get(x);
-            if(dbColNames != null && y < dbColNames.size()) {
-                idColumnName = dbColNames.get(y);
+        final Field [] fields = aClass.getDeclaredFields();
+        for(Field field:fields) {
+            Id id = field.getAnnotation(Id.class);
+            if(id != null) {
+                Column column = field.getAnnotation(Column.class);
+                idColumnName = column.name();
+                break;
             }
         }
-
-        if(idColumnName == null) {
-            idColumnName = this.loadId(aClass, x, y);
-        }
-        
+//Logger.getLogger(this.getClass().getName()).log(Level.FINER, 
+//        "Class: {0}, id field name: {1}, id column name: {2}", 
+//        new Object[]{aClass, idFieldName, idColumnName});        
         return idColumnName;
     }
     
@@ -728,42 +721,49 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
     
     @Override
     public String getPersistenceUnitName(Class aClass) {
-
-        int [] pos = this.positionOf(aClass);
         
-        if(pos == null || pos.length == 0) {
-            throw new IllegalArgumentException("Unexpected class: "+aClass.getName());
+        for(String puName : puToClassesMap.keySet()) {
+            
+            if(puToClassesMap.get(puName).contains(aClass)) {
+                
+                return puName;
+            }
         }
-
-//System.out.println(this.getClass().getName()+"#getPersistenceUnitName(java.lang.Class). Class: "+aClass.getName()+", pos: "+(pos==null?null:Arrays.toString(pos)));
         
-        int index = pos[0];
-        if(index > -1) {
-            return this.puNames.get(index);
-        }else{
-            return null;
-        }
+        return null;
     }
 
     @Override
     public String getPersistenceUnitName(String database) {
-        int index = this.indexOfDatabase(database);
-        if(index > -1) {
-            return this.puNames.get(index);
-        }else{
-            return null;
+        
+        for(String puName : this.puToClassesMap.keySet()) {
+            
+            if(database.equals(this.getDatabaseName(puName))) {
+                
+                return puName;
+            }
         }
+        
+        return null;
     }
 
     public String getDatabaseName(String persistenceUnitName) {
-        int index = puNames.indexOf(persistenceUnitName);
-        if(index > -1) {
-            return this.getDatabaseNameFromUrl(this.jdbcUrls.get(index));
-        }else{
-            return null;
-        }
+        final Class anyClass = this.puToClassesMap.get(persistenceUnitName).get(0);
+        return this.fetchDatabaseName(persistenceUnitName, anyClass);
     }
 
+    public String fetchDatabaseName(String puName, Class aClass) {
+        try{
+            String [] arr = this.fetchStringMetaData(null, aClass, TABLE_CATALOG);
+            if(arr == null || arr.length == 0) {
+                arr = this.fetchStringMetaData(null, aClass, TABLE_SCHEMA);
+            }
+            return arr == null || arr.length == 0 ? null : arr[0];
+        }catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
     private Class getReferencingClass(Field field) {
         return this.getReferencingClass(field, null);
     }
@@ -862,106 +862,23 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
         return output;
     }
 
-    private String loadId(Class aClass, final int x, final int y) {
-        
-        String idColumnName = null;
-        
-        Field [] fields = aClass.getDeclaredFields();
-        String idFieldName = null;
-        for(Field field:fields) {
-            Id id = field.getAnnotation(Id.class);
-            if(id != null) {
-                Column column = field.getAnnotation(Column.class);
-                idColumnName = column.name();
-                idFieldName = field.getName();
-                break;
-            }
-        }
-//Logger.getLogger(this.getClass().getName()).log(Level.FINER, 
-//        "Class: {0}, id field name: {1}, id column name: {2}", 
-//        new Object[]{aClass, idFieldName, idColumnName});        
-        if(idColumnName != null) {
-            if(x != -1 && y != -1) {
-                this.idFieldNames = this.update(x, y, this.idFieldNames, idFieldName);
-                this.idColumnNames = this.update(x, y, this.idColumnNames, idColumnName);
-            }
-        }
-        
-        assert idColumnName != null;
-        
-        return idColumnName;
-    }
-    
-    private List<List<String>> update(int x, int y, List<List<String>> toUpdate, String value) {
-        if(toUpdate == null) {
-            toUpdate = new ArrayList<>();
-        }
-        List<String> list = null;
-        if(x < toUpdate.size()) {
-            list = toUpdate.get(x);
-        }
-        if(list == null) {
-            list = new ArrayList<>();
-            this.fillAndSet(toUpdate, x, list);
-        }
-        this.fillAndSet(list, y, value);
-        return toUpdate;
-    }
-    
-    private void fillAndSet(List list, int index, Object e) {
-        final int size = list.size();
-        if(index >= size) {
-            int n = (index - size) + 1;
-            for(int i=0; i<n; i++) {
-                list.add(null);
-            }
-        }
-        list.set(index, e);
-    }
-    
-    private int indexOfDatabase(String database) {
-        int i = -1;
-        for(String jdbcUrl:jdbcUrls) {
-            ++i;
-            if(this.getDatabaseNameFromUrl(jdbcUrl).equals(database)) {
-                break;
-            }
-        }
-        return i;
-    }
-    
-    private String getDatabaseNameFromUrl(String jdbcUrl) {
-        // Extract dbname from jdbc:mysql://localhost:3306/dbname
-        //
-        final int offset = jdbcUrl.lastIndexOf('/') + 1;
-        return jdbcUrl.substring(offset);
-    }
-    
-    private int[] positionOf(Class aClass) {
-        int [] pos = {-1, -1};
-        for(List<Class> list:this.classes) {
-            ++pos[0];
-            int y = list.indexOf(aClass);
-            if(y != -1) {
-                pos[1] = y;
-                break;
-            }
-        }
-        return pos[1] == -1 ? null : pos;
-    }
-    
     private boolean isCollectionType(Class type) {
         return type == java.util.Collection.class ||
                 type == java.util.Set.class ||
                 type == java.util.List.class;
     }
-
+    
     @Override
     public int [] fetchIntMetaData(Class entityClass, int resultSetDataIndex) throws SQLException {
+        final String dbName = this.getDatabaseName(entityClass);
+        return this.fetchIntMetaData(dbName, entityClass, resultSetDataIndex);
+    }
+
+    private int [] fetchIntMetaData(String databaseName, Class entityClass, int resultSetDataIndex) throws SQLException {
         
         final IntegerArray intArray = new IntegerArray(30);
         
-        EntityManager entityManager = jpaContext.getEntityManager(entityClass);
+        final EntityManager entityManager = jpaContext.getEntityManager(entityClass);
         
         try{
             
@@ -971,8 +888,6 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
 
             final DatabaseMetaData dbMetaData = connection.getMetaData();
 
-            final String databaseName = this.getDatabaseName(entityClass);
-        
             final String tableName = this.getTableName(entityClass);
           
             final ResultSet dbData = dbMetaData.getColumns(null, databaseName, tableName, null);
@@ -996,23 +911,27 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
 
     @Override
     public String [] fetchStringMetaData(Class entityClass, int resultSetDataIndex) throws SQLException {
+        final String dbName = this.getDatabaseName(entityClass);
+        return this.fetchStringMetaData(dbName, entityClass, resultSetDataIndex);
+    }
+        
+    private String [] fetchStringMetaData(
+            String databaseName, Class entityClass, int resultSetDataIndex) throws SQLException {
         
         final List<String> list = new LinkedList<>();
         
-        EntityManager entityManager = jpaContext.getEntityManager(entityClass);
+        final EntityManager em = jpaContext.getEntityManager(entityClass);
         
         try{
-            
-            entityManager.getTransaction().begin();
         
-            final java.sql.Connection connection = entityManager.unwrap(java.sql.Connection.class);
+            em.getTransaction().begin();
+
+            final java.sql.Connection connection = em.unwrap(java.sql.Connection.class);
 
             final DatabaseMetaData dbMetaData = connection.getMetaData();
 
-            final String databaseName = this.getDatabaseName(entityClass);
-        
             final String tableName = this.getTableName(entityClass);
-          
+
             final ResultSet dbData = dbMetaData.getColumns(null, databaseName, tableName, null);
 
             while(dbData.next()) {
@@ -1022,19 +941,25 @@ XLogger.getInstance().log(Level.FINER, "Entity class: {0}, table annotation: {1}
                 list.add(data);
             }
 
-            entityManager.getTransaction().commit();  
-            
+            em.getTransaction().commit();  
+
             return list.isEmpty() ? new String[0] : list.toArray(new String[0]);
             
         }finally{
-            
-            entityManager.close();
+            em.close();
         }
     }
 }
 /**
  * 
 
+    private String getDatabaseNameFromUrl(String jdbcUrl) {
+        // Extract dbname from jdbc:mysql://localhost:3306/dbname
+        //
+        final int offset = jdbcUrl.lastIndexOf('/') + 1;
+        return jdbcUrl.substring(offset);
+    }
+    
     private int [] fetchIntMetaDataX_old(Class entityClass, int resultSetDataIndex) throws SQLException {
 
         final String [] columnNames = this.getColumnNames(entityClass);
