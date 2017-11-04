@@ -1,6 +1,6 @@
 package com.bc.jpa.search;
 
-import com.bc.jpa.EntityController;
+import com.bc.jpa.controller.EntityController;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,13 +11,13 @@ import com.looseboxes.pu.entities.Productvariant;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import junit.framework.TestCase;
-import com.bc.jpa.JpaContext;
-import com.bc.jpa.dao.BuilderForSelectImpl;
+import com.bc.jpa.context.JpaContext;
+import com.bc.jpa.dao.SelectImpl;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
-import com.bc.jpa.dao.BuilderForSelect;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Josh
@@ -168,11 +168,11 @@ System.out.println(b);
                 batchSize, useCache);
     }
     
-    protected <R> BuilderForSelect<R> createQueryBuilder(
+    protected <R> Select<R> createQueryBuilder(
             JpaContext jpaContext, Class entityType, Class<R> resultType, String query) {
 
-//            BuilderForSelect queryBuilder = cf.getBuilderForSelect(resultType);
-        BuilderForSelect queryBuilder = new BuilderForSelectImpl(
+//            Select queryBuilder = cf.getDaoForSelect(resultType);
+        Select queryBuilder = new SelectImpl(
                 jpaContext.getEntityManager(entityType), resultType, null);
 
         if(entityType == Product.class){

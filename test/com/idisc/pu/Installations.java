@@ -1,7 +1,7 @@
 package com.idisc.pu;
 
-import com.bc.jpa.EntityController;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.controller.EntityController;
+import com.bc.jpa.context.JpaContext;
 import com.bc.util.XLogger;
 import com.idisc.pu.entities.Installation;
 import java.util.Calendar;

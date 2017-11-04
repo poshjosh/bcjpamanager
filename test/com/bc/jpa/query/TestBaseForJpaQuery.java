@@ -1,10 +1,8 @@
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForUpdate;
-import com.bc.jpa.dao.BuilderForSelectImpl;
-import com.bc.jpa.dao.BuilderForUpdateImpl;
-import com.bc.jpa.dao.BuilderForSelect;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.dao.SelectImpl;
+import com.bc.jpa.dao.UpdateImpl;
+import com.bc.jpa.context.JpaContext;
 import com.bc.jpa.TestApp;
 import com.looseboxes.pu.entities.Product;
 import java.util.Arrays;
@@ -12,6 +10,8 @@ import java.util.List;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import junit.framework.TestCase;
+import com.bc.jpa.dao.Select;
+import com.bc.jpa.dao.Update;
 
 /**
  * @author Josh
@@ -45,13 +45,13 @@ public class TestBaseForJpaQuery extends TestCase {
         
 System.out.println(this.getClass().getName()+"#selectRange("+start+", "+end+")");
 
-        try(BuilderForSelect<Product> instance = createSelect(ENTITY_TYPE)) {
+        try(Select<Product> instance = createSelect(ENTITY_TYPE)) {
         
             final String COLUMN = "productid";
 
             TypedQuery<Product> tq = instance.from(ENTITY_TYPE)
-                    .where(COLUMN, BuilderForSelect.GREATER_OR_EQUALS, start, BuilderForSelect.AND)
-                    .where(COLUMN, BuilderForSelect.LESS_THAN, end)        
+                    .where(COLUMN, Select.GREATER_OR_EQUALS, start, Select.AND)
+                    .where(COLUMN, Select.LESS_THAN, end)        
                     .descOrder(COLUMN)
                     .createQuery();
 
@@ -63,7 +63,7 @@ System.out.println(this.getClass().getName()+"#selectRange("+start+", "+end+")")
     
     public List<Integer> selectLastIds(int n) {
         
-        try(BuilderForSelect<Integer> instance = createSelect(Integer.class)) {
+        try(Select<Integer> instance = createSelect(Integer.class)) {
         
             TypedQuery<Integer> tq = instance
                     .from(Product.class)
@@ -93,9 +93,9 @@ System.out.println(result);
         }
     }
     
-    public <R> BuilderForSelect<R> createSelect(Class<R> resultType) {
+    public <R> Select<R> createSelect(Class<R> resultType) {
         
-        return new BuilderForSelectImpl<R>(this.getLbJpaContext().getEntityManager(ENTITY_TYPE), resultType, this.getLbJpaContext().getDatabaseFormat()){
+        return new SelectImpl<R>(this.getLbJpaContext().getEntityManager(ENTITY_TYPE), resultType, this.getLbJpaContext().getDatabaseFormat()){
             @Override
             public TypedQuery<R> createQuery() {
 
@@ -108,9 +108,9 @@ System.out.println(result);
         };
     }
 
-    public BuilderForUpdate<Product> createUpdate() {
+    public Update<Product> createUpdate() {
         
-        return new BuilderForUpdateImpl(this.getLbJpaContext().getEntityManager(ENTITY_TYPE), ENTITY_TYPE, this.getLbJpaContext().getDatabaseFormat()){
+        return new UpdateImpl(this.getLbJpaContext().getEntityManager(ENTITY_TYPE), ENTITY_TYPE, this.getLbJpaContext().getDatabaseFormat()){
             @Override
             public Query createQuery() {
 

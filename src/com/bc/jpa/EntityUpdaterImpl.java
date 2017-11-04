@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 NUROX Ltd.
+ * Copyright 2017 NUROX Ltd.
  *
  * Licensed under the NUROX Ltd Software License (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,23 @@
 
 package com.bc.jpa;
 
+import com.bc.jpa.context.PersistenceUnitContext;
 import com.bc.jpa.exceptions.EntityInstantiationException;
+import com.bc.jpa.util.JpaUtil;
 import com.bc.util.XLogger;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.JoinColumn;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on Dec 12, 2016 12:27:05 PM
- * @param <E> The type of the entity
- * @param <e> The type of the entity ID
+ * @author Chinomso Bassey Ikwuagwu on Oct 28, 2017 12:46:14 PM
  */
 public class EntityUpdaterImpl<E, e> implements EntityUpdater<E, e> {
     
@@ -40,24 +40,17 @@ public class EntityUpdaterImpl<E, e> implements EntityUpdater<E, e> {
     
     private final Method [] methods;
     
-    private final JpaContext jpaContext;
+    private final PersistenceUnitContext puContext;
+    
+    private final EntityReference entityReference;
 
-    public EntityUpdaterImpl(JpaContext jpaContext, Class<E> entityClass) {
+    public EntityUpdaterImpl(PersistenceUnitContext puContext, Class<E> entityClass) {
         this.entityClass = Objects.requireNonNull(entityClass);
         this.methods = this.entityClass.getMethods(); 
-        this.jpaContext = Objects.requireNonNull(jpaContext);
+        this.puContext = Objects.requireNonNull(puContext);
+        this.entityReference = puContext.getPersistenceContext().getEntityReference();
     }
 
-    @Override
-    public EntityManagerFactory getEntityManagerFactory() {
-        return this.jpaContext.getEntityManagerFactory(entityClass);
-    }
-
-    @Override
-    public EntityManager getEntityManager() {
-        return getEntityManagerFactory().createEntityManager();
-    }
-    
     @Override
     public E create(Map values, boolean convertCrossReferences) throws EntityInstantiationException {
         try{
@@ -80,7 +73,7 @@ public class EntityUpdaterImpl<E, e> implements EntityUpdater<E, e> {
         
         int updateCount = 0;
         
-        final String [] targetNames = this.getJpaContext().getMetaData().getColumnNames(target.getClass());
+        final String [] targetNames = this.puContext.getMetaData().getColumnNames(target.getClass());
         
         for(String targetName : targetNames) {
             
@@ -109,18 +102,18 @@ XLogger.getInstance().log(Level.FINER, "Updating entity: {0} with values {1}", t
             
             Map<JoinColumn, Field> joinColumns;
             if(convertCrossReferences && !row.isEmpty()) {
-                joinColumns = jpaContext.getMetaData().getJoinColumns(entityClass);
+                joinColumns = this.entityReference.getJoinColumns(entityClass);
             }else{
                 joinColumns = null;
             }
             
-            final EntityManager em = jpaContext.getEntityManager(this.entityClass);
+            final EntityManager em = puContext.getEntityManager();
             
             for(Map.Entry entry:(Set<Map.Entry>)row.entrySet()) {
                 String col = entry.getKey().toString();
                 Object val = entry.getValue();
                 if(convertCrossReferences && (joinColumns != null && !joinColumns.isEmpty())) {
-                    Object ref = jpaContext.getReference(em, entityClass, joinColumns, col, val);
+                    Object ref = this.entityReference.getReference(em, entityClass, joinColumns, col, val);
                     if(ref != null) {
                         val = ref;
                     }
@@ -147,7 +140,7 @@ XLogger.getInstance().log(Level.FINER, "Updating entity: {0} with values {1}", t
     @Override
     public e getId(E entity) 
             throws IllegalArgumentException, UnsupportedOperationException {
-        return (e)this.getValue(entity, this.jpaContext.getMetaData().getIdColumnName(this.entityClass));
+        return (e)this.getValue(entity, this.puContext.getMetaData().getIdColumnName(this.entityClass));
     }
 
     /**
@@ -217,7 +210,7 @@ this.getClass(), entity, columnName, (method==null?null:method.getName()));
     public void setId(E entity, e id) 
             throws IllegalArgumentException, UnsupportedOperationException {
         
-        this.setValue(entity, this.jpaContext.getMetaData().getIdColumnName(this.entityClass), id);
+        this.setValue(entity, this.puContext.getMetaData().getIdColumnName(this.entityClass), id);
     }
 
     /**
@@ -262,6 +255,9 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
                 }
 
                 method.invoke(entity, columnValue);
+//                if(entity.getClass().getName().endsWith("Productvariant")) {
+//                    System.out.println("XXXXXXXXXXXXXXXXXXXXXXXXXx Set value to: " + columnValue);
+//                }
             }
         }catch(IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             
@@ -297,6 +293,8 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
             output = Double.valueOf(value.toString());
         }else if((toType == boolean.class || toType == Boolean.class) && !(value instanceof Boolean)) {
             output = Boolean.valueOf(value.toString());
+        }else if((toType == BigDecimal.class) && !(value instanceof BigDecimal)) {
+            output = new BigDecimal(value.toString());
         }else{
             output = alternateOutput;
         }
@@ -322,14 +320,5 @@ this.getClass(), entity, columnName, columnValue, (method==null?null:method.getN
     public final Class<E> getEntityClass() {
         return entityClass;
     }
-
-    @Override
-    public final JpaContext getJpaContext() {
-        return jpaContext;
-    }
-
-    @Override
-    public final JpaMetaData getMetaData() {
-        return this.jpaContext.getMetaData();
-    }
 }
+

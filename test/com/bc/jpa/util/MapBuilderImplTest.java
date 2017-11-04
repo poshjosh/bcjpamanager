@@ -15,9 +15,8 @@
  */
 package com.bc.jpa.util;
 
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 import com.bc.jpa.TestApp;
-import com.bc.jpa.dao.BuilderForSelect;
 import com.bc.util.JsonBuilder;
 import com.bc.util.MapBuilder;
 import com.bc.util.MapBuilderImpl;
@@ -31,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
 import org.junit.Test;
+import com.bc.jpa.dao.Select;
 
 /**
  *
@@ -57,7 +57,7 @@ public class MapBuilderImplTest extends TestCase {
         
         final JpaContext jpaContext = TestApp.getInstance().getIdiscJpaContext();
         
-        final BuilderForSelect<Feed> dao = jpaContext.getBuilderForSelect(Feed.class);
+        final Select<Feed> dao = jpaContext.getDaoForSelect(Feed.class);
         
         final List<Feed> found = dao.descOrder(Feed.class, "feeddate").getResultsAndClose(100, 3);
         

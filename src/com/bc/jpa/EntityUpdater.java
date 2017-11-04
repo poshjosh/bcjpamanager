@@ -19,8 +19,6 @@ package com.bc.jpa;
 import com.bc.jpa.exceptions.EntityInstantiationException;
 import java.lang.reflect.Method;
 import java.util.Map;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Jan 29, 2017 8:28:30 PM
@@ -33,10 +31,6 @@ public interface EntityUpdater<E, e> {
 
     Class<E> getEntityClass();
 
-    EntityManager getEntityManager();
-
-    EntityManagerFactory getEntityManagerFactory();
-
     /**
      * @param entity Entity whose Id is to be returned
      * @return The id of the specified entity
@@ -46,10 +40,6 @@ public interface EntityUpdater<E, e> {
      * throws an exception
      */
     e getId(E entity) throws IllegalArgumentException, UnsupportedOperationException;
-
-    JpaContext getJpaContext();
-
-    JpaMetaData getMetaData();
 
     /**
      * @param entity Entity whose value is to be returned

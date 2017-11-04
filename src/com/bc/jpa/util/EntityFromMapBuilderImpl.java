@@ -17,8 +17,9 @@
 package com.bc.jpa.util;
 
 import com.bc.jpa.EntityUpdater;
-import com.bc.jpa.JpaContext;
-import com.bc.jpa.JpaMetaData;
+import com.bc.jpa.context.PersistenceContext;
+import com.bc.jpa.metadata.PersistenceMetaData;
+import com.bc.jpa.metadata.PersistenceUnitMetaData;
 import com.bc.util.JsonFormat;
 import com.bc.util.ReflectionUtil;
 import java.lang.reflect.InvocationTargetException;
@@ -40,7 +41,9 @@ public class EntityFromMapBuilderImpl implements EntityFromMapBuilder {
 
     private static final Logger logger = Logger.getLogger(EntityFromMapBuilderImpl.class.getName());
     
-    private final JpaContext jpaContext;
+    private final Set<String> puNames;
+    
+    private final PersistenceContext jpaContext;
     
     private final Map<Class, Set<String>> entityColumnNames;
     
@@ -56,19 +59,31 @@ public class EntityFromMapBuilderImpl implements EntityFromMapBuilder {
     
     private ResultHandler resultHandler;
     
-    public EntityFromMapBuilderImpl(JpaContext jpaContext, Set<String> puNames) {
+    public EntityFromMapBuilderImpl(PersistenceContext jpaContext, Set<String> puNames) {
         this.jpaContext = jpaContext;
-        final JpaMetaData metaData = jpaContext.getMetaData();
+        this.puNames = Objects.requireNonNull(puNames);
+        final PersistenceMetaData metaData = jpaContext.getMetaData();
         this.entityColumnNames = new HashMap<>(32, 0.75f);
         for(String puName : puNames) {
-            final Class [] puClasses = metaData.getEntityClasses(puName);
+            final Set<Class> puClasses = metaData.getEntityClasses(puName);
+            final PersistenceUnitMetaData puMeta = metaData.getMetaData(puName);
             for(Class puClass : puClasses) {
-                final Set<String> columnNames = new HashSet(Arrays.asList(metaData.getColumnNames(puClass)));
+                final Set<String> columnNames = new HashSet(Arrays.asList(puMeta.getColumnNames(puClass)));
                 this.entityColumnNames.put(puClass, columnNames);
             }
         }
         this.formatter = Formatter.NO_OP;
         this.resultHandler = ResultHandler.NO_OP;
+    }
+    
+    public EntityUpdater getEntityUpdater(Class entityType) {
+        for(String puName : puNames) {
+            if(this.jpaContext.getMetaData().getMetaData(puName).getEntityClasses().contains(entityType)) {
+                return this.jpaContext.getContext(puName).getEntityUpdater(entityType);
+            }
+        }
+        throw new IllegalArgumentException("Unexpected entity type: " + entityType.getName() + 
+                "Does not belong to any of the follow persistence units: " + puNames);
     }
     
     @Override
@@ -98,7 +113,7 @@ public class EntityFromMapBuilderImpl implements EntityFromMapBuilder {
         
         final Set keys = src.keySet();
        
-        final EntityUpdater updater = this.jpaContext.getEntityUpdater(tgt.getClass());
+        final EntityUpdater updater = this.getEntityUpdater(tgt.getClass());
         
         final ReflectionUtil reflection = new ReflectionUtil();
         

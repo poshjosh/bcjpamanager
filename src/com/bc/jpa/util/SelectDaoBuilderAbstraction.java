@@ -16,7 +16,7 @@
 
 package com.bc.jpa.util;
 
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 import java.util.Collection;
 import java.util.Collections;
 

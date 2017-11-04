@@ -1,7 +1,6 @@
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForSelect;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 import com.bc.jpa.TestApp;
 import static com.bc.jpa.query.TestBaseForJpaQuery.ENTITY_TYPE;
 import com.looseboxes.pu.entities.Orderproduct;
@@ -18,6 +17,7 @@ import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import org.junit.Test;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Josh
@@ -47,7 +47,7 @@ System.out.println("#testJoin_2Modes");
         for(Productvariant variant:variants) {
 
             List<Productorder> orders0;
-            try(BuilderForSelect<Productorder> instance = createSelect(Productorder.class)) {
+            try(Select<Productorder> instance = createSelect(Productorder.class)) {
 
                 TypedQuery<Productorder> tq = instance
                         .join(Productorder.class, joinCol, JoinType.INNER, Orderproduct.class)

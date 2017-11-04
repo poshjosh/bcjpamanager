@@ -16,9 +16,7 @@
 
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForSelect;
-import com.bc.jpa.JpaContext;
-import com.bc.jpa.dao.BuilderForDelete;
+import com.bc.jpa.context.JpaContext;
 import com.idisc.pu.References;
 import com.idisc.pu.entities.Emailstatus;
 import com.idisc.pu.entities.Extractedemail;
@@ -30,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import javax.persistence.NoResultException;
 import org.junit.Test;
+import com.bc.jpa.dao.Select;
+import com.bc.jpa.dao.Delete;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Aug 19, 2016 9:21:10 AM
@@ -53,7 +53,7 @@ public class TestReuseSelect extends TestBaseForJpaQuery {
     
     final List<Extractedemail> created = new LinkedList();
     
-    try (com.bc.jpa.dao.BuilderForSelect<Extractedemail> select = jpaContext.getBuilderForSelect(Extractedemail.class)){
+    try (com.bc.jpa.dao.Select<Extractedemail> select = jpaContext.getDaoForSelect(Extractedemail.class)){
        
       System.out.println("Adding "+emailsAndUsernames.size()+" contacts");
       
@@ -97,7 +97,7 @@ public class TestReuseSelect extends TestBaseForJpaQuery {
 System.out.println("============================== Created: "+created);
     }
     
-    try(BuilderForDelete<Extractedemail> dao = jpaContext.getBuilderForDelete(Extractedemail.class)) {
+    try(Delete<Extractedemail> dao = jpaContext.getDaoForDelete(Extractedemail.class)) {
         
       dao.begin();
         
@@ -121,7 +121,7 @@ System.out.println("============================== Update count: "+updateCount);
       dao.commit();
     }
 
-    BuilderForSelect<Extractedemail> select = jpaContext.getBuilderForSelect(Extractedemail.class);
+    Select<Extractedemail> select = jpaContext.getDaoForSelect(Extractedemail.class);
     
     for (Object email : emailsAndUsernames.keySet()) {
           

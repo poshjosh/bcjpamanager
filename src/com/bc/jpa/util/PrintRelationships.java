@@ -16,9 +16,8 @@
 
 package com.bc.jpa.util;
 
-import com.bc.jpa.JpaContext;
-import com.bc.jpa.JpaMetaData;
-import com.bc.jpa.JpaUtil;
+import com.bc.jpa.context.JpaContext;
+import com.bc.jpa.metadata.JpaMetaData;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Arrays;

@@ -1,6 +1,6 @@
 package com.bc.jpa.fk;
 
-import com.bc.jpa.EntityController;
+import com.bc.jpa.controller.EntityController;
 import com.bc.util.XLogger;
 import java.io.Serializable;
 import java.text.MessageFormat;
@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import com.bc.jpa.JpaContext;
-import com.bc.jpa.JpaMetaData;
+import com.bc.jpa.context.JpaContext;
+import com.bc.jpa.metadata.JpaMetaData;
 
 /**
  * @(#)AbstractEnumReferences.java   15-May-2015 08:27:29

@@ -86,7 +86,7 @@
   </persistence-unit>
   <persistence-unit name="idisc_looseboxespu" transaction-type="RESOURCE_LOCAL">
     <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
-    <class>com.idisc.pu.entities.external.UnofficialEmails</class>
+    <!--class>com.idisc.pu.entities.external.UnofficialEmails</class-->
     <properties>
       <property name="eclipselink.canonicalmodel.subpackage" value="two"/>  
       <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/loosebox_db2?zeroDateTimeBehavior=convertToNull"/>

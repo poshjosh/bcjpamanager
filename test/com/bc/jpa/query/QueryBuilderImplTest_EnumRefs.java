@@ -1,9 +1,9 @@
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForSelect;
 import com.looseboxes.pu.References;
 import com.looseboxes.pu.entities.Availability;
 import com.looseboxes.pu.entities.Product;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Josh
@@ -16,7 +16,7 @@ public class QueryBuilderImplTest_EnumRefs extends TestBaseForJpaQuery {
     
     public void testEnumRefs() {
         
-        BuilderForSelect<Product> qb = this.createSelect(Product.class);
+        Select<Product> qb = this.createSelect(Product.class);
         
         Product product0 = qb.from(Product.class).createQuery().setMaxResults(1).getSingleResult();
 System.out.println("================= Selected 0: "+product0);
@@ -27,7 +27,7 @@ System.out.println("================= Selected 0: "+product0);
 System.out.println("================= Reference: "+reference);
 
         Product product1 = qb.from(Product.class)
-        .where("availabilityid", BuilderForSelect.EQ, reference)
+        .where("availabilityid", Select.EQ, reference)
         .createQuery().setMaxResults(1).getSingleResult();
 System.out.println("================= Selected 1: "+product1);        
 
@@ -36,7 +36,7 @@ System.out.println("================= Selected 1: "+product1);
         qb = this.createSelect(Product.class);
         
         Product product2 = qb.from(Product.class)
-        .where("availabilityid", BuilderForSelect.EQ, reference.getAvailabilityid())
+        .where("availabilityid", Select.EQ, reference.getAvailabilityid())
         .createQuery().setMaxResults(1).getSingleResult();
 System.out.println("================= Selected 2: "+product2);
 
@@ -48,7 +48,7 @@ System.out.println("================= Selected 2: "+product2);
 System.out.println("================= Availability Reference: "+availabilityReference);
 
         Product product3 = qb.from(Product.class)
-        .where("availabilityid", BuilderForSelect.EQ, availabilityReference)
+        .where("availabilityid", Select.EQ, availabilityReference)
         .createQuery().setMaxResults(1).getSingleResult();
 System.out.println("================= Selected 3: "+product3);
 
@@ -60,7 +60,7 @@ System.out.println("================= Selected 3: "+product3);
 System.out.println("================= Reference Enum: "+referenceEnum);
 
         Product product4 = qb.from(Product.class)
-        .where("availabilityid", BuilderForSelect.EQ, referenceEnum)
+        .where("availabilityid", Select.EQ, referenceEnum)
         .createQuery().setMaxResults(1).getSingleResult();
 System.out.println("================= Selected 4: "+product4);
 

@@ -1,7 +1,7 @@
 package com.idisc.pu;
 
 import com.idisc.pu.entities.Feed;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 
 /**
  * @author Josh
@@ -14,6 +14,7 @@ public class FeedDao extends SearchDao<Feed> {
     
     public FeedDao(JpaContext jpaContext, int offset, int limit, String query) {
         
-        super(jpaContext, Feed.class, offset, limit, query, "title", "keywords", "description", "content");
+        super(jpaContext, Feed.class, offset, limit, query, 
+                "author", "title", "keywords",  "categories", "description", "content");
     }
 }

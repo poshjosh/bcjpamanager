@@ -21,7 +21,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 
 /**
  * keys are columnNames and values are <tt>Maps</tt> whose keys are gotten
@@ -55,7 +55,7 @@ XLogger.getInstance().log(Level.FINER, "<init>", this.getClass());
     
     private void init() {
 
-long mb4 = Runtime.getRuntime().freeMemory();
+long mb4 = com.bc.util.Util.availableMemory();
 long tb4 = System.currentTimeMillis();
 
         EntityManager em = null;
@@ -95,7 +95,7 @@ long tb4 = System.currentTimeMillis();
             
 XLogger.getInstance().log(Level.FINE, 
 "Expended memory: {0}, time: {1} to load listings for entity type: {2}, listings:\n{3}",
-this.getClass(), mb4-Runtime.getRuntime().freeMemory(), 
+this.getClass(), mb4-com.bc.util.Util.usedMemory(mb4), 
 System.currentTimeMillis()-tb4,  this.getEntityClass(), this.values);
             
             if(em != null) {

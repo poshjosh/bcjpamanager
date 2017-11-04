@@ -17,9 +17,8 @@
 package com.bc.jpa.util;
 
 import com.bc.jpa.EntityUpdater;
-import com.bc.jpa.JpaMetaData;
-import com.bc.jpa.dao.BuilderForSelect;
-import com.bc.jpa.dao.BuilderForSelectImpl;
+import com.bc.jpa.metadata.JpaMetaData;
+import com.bc.jpa.dao.SelectImpl;
 import com.bc.jpa.dao.SelectDao;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +39,7 @@ import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Apr 16, 2017 3:28:12 PM
@@ -86,8 +86,8 @@ public class SelectDaoBuilderImpl<T> extends SelectDaoBuilderAbstraction<T> {
         
         final EntityManager em = this.getJpaContext().getEntityManager(resultType);
 
-        final BuilderForSelect<T> dao = resultType == null ? 
-                new BuilderForSelectImpl(em) : new BuilderForSelectImpl(em, resultType);
+        final Select<T> dao = resultType == null ? 
+                new SelectImpl(em) : new SelectImpl(em, resultType);
         
         final CriteriaBuilder cb = dao.getCriteriaBuilder();
         

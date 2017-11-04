@@ -17,13 +17,22 @@
 package com.bc.jpa.search;
 
 import com.bc.jpa.dao.Criteria;
-import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
+import javax.persistence.Query;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on May 20, 2017 4:15:21 AM
  */
 public interface TextSearch {
+    
+    /**
+     * @return The list of entities matching the text that was searched
+     * @see #search(java.lang.Class, java.lang.Object, int, float, java.util.function.Function) 
+     */
+    default <T> List<T> search(Class<T> entityType, Object value, int minimumParts, float factor) {
+        return this.search(entityType, value, minimumParts, factor, (query) -> query);
+    }
     
     /**
      * <p>Part count of the input value is reduced by the supplied factor before
@@ -47,21 +56,40 @@ public interface TextSearch {
      * @param value The value to be resolved into the text to be searched for
      * @param minimumParts The minimum parts the input value must have to be eligible for reduction
      * @param factor The factor by which part count of the input value is reduced.
+     * @param queryFormatter A function to format the query before it is executed
      * @return The list of entities matching the text that was searched
      * @see #getSearchText(java.lang.Object, float) 
      * @see #search(java.lang.Class, java.lang.String) 
      */
-    <T> List<T> search(Class<T> entityType, Object value, int minimumParts, float factor);
+    <T> List<T> search(Class<T> entityType, Object value, int minimumParts, 
+            float factor, Function<Query, Query> queryFormatter);
 
+    /**
+     * @return The list of entities matching the text that was searched
+     * @see #search(java.lang.Class, java.lang.String, com.bc.jpa.dao.Criteria.ComparisonOperator, java.util.function.Function) 
+     */
+    default <T> List<T> search(Class<T> entityType, String text) {
+        return this.search(entityType, text, (query) -> query);
+    }
+    
     /**
      * Search all <code>text type</code> columns of the specified entity type
      * for the specified text using the SQL <code>LIKE</code> keyword.
      * @param <T> The generic type of the entity 
      * @param entityType The type of the entity
      * @param text The text to search for
+     * @param queryFormatter A function to format the query before it is executed
      * @return The list of entities matching the text that was searched
      */
-    <T> List<T> search(Class<T> entityType, String text);
+    <T> List<T> search(Class<T> entityType, String text, Function<Query, Query> queryFormatter);
+    
+    /**
+     * @return The list of entities matching the text that was searched
+     * @see #search(java.lang.Class, java.lang.String, com.bc.jpa.dao.Criteria.ComparisonOperator, java.util.function.Function) 
+     */
+    default <T> List<T> search(Class<T> entityType, String text, Criteria.ComparisonOperator c) {
+        return this.search(entityType, text, c, (query) -> query);
+    }
     
     /**
      * Search all <code>text type</code> columns of the specified entity type
@@ -71,13 +99,13 @@ public interface TextSearch {
      * @param text The text to search for
      * @param c The SQL comparison operator e.g {@link com.bc.jpa.dao.Criteria.ComparisonOperator#EQUALS EQUALS}
      * OR {@link com.bc.jpa.dao.Criteria.ComparisonOperator#LIKE LIKE} etc
+     * @param queryFormatter A function to format the query before it is executed
      * @return The list of entities matching the text that was searched
      */
-    public <T> List<T> search(Class<T> entityType, String text, Criteria.ComparisonOperator c);
+    <T> List<T> search(Class<T> entityType, String text, 
+            Criteria.ComparisonOperator c, Function<Query, Query> queryFormatter);
 
     boolean search(Object searchIn, Object searchFor, boolean textTypesOnly);
-    
-    Collection<String> getColumnNamesToSearch(Class entityType);
     
     String getSearchText(Object value, float factor);
     

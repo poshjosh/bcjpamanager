@@ -1,7 +1,6 @@
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForSelect;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 import com.bc.jpa.TestApp;
 import static com.bc.jpa.query.TestBaseForJpaQuery.ENTITY_TYPE;
 import static com.bc.jpa.query.TestBaseForJpaQuery.SELECTED_PRODUCTID;
@@ -18,6 +17,7 @@ import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
 import org.junit.Test;
 import static junit.framework.Assert.assertTrue;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Josh
@@ -42,13 +42,13 @@ System.out.println("#testSearchAndWhereGreaterOrEquals_3 modes");
         
 System.out.println("MODE 1: QueryBuilder#where(String[], LIKE, ?, OR)");            
         List<Object[]> results0;
-        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
+        try(Select<Object[]> instance = createSelect(Object[].class)) {
         
             TypedQuery<Object[]> tq = instance.from(ENTITY_TYPE)
                     .select(colsToSelect)
-                    .where(colsToSearch, BuilderForSelect.LIKE, queryExpression, BuilderForSelect.OR)
+                    .where(colsToSearch, Select.LIKE, queryExpression, Select.OR)
                     .and()
-                    .where(ID_COL, BuilderForSelect.GREATER_OR_EQUALS, ID_VAL)
+                    .where(ID_COL, Select.GREATER_OR_EQUALS, ID_VAL)
                     .descOrder(ID_COL)
                     .createQuery();
             
@@ -58,13 +58,13 @@ this.printResults(results0, true);
 
 System.out.println("MODE 2: QueryBuilder#search(String[], ?)");            
         List<Object[]> results1;
-        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
+        try(Select<Object[]> instance = createSelect(Object[].class)) {
         
             TypedQuery<Object[]> tq1 = instance.from(ENTITY_TYPE)
                     .select(colsToSelect)
                     .search(query, colsToSearch)
                     .and()
-                    .where(ID_COL, BuilderForSelect.GREATER_OR_EQUALS, ID_VAL)
+                    .where(ID_COL, Select.GREATER_OR_EQUALS, ID_VAL)
                     .descOrder(ID_COL)
                     .createQuery();
             

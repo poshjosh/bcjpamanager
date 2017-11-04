@@ -16,12 +16,12 @@
 
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForSelect;
 import static com.bc.jpa.query.TestBaseForJpaQuery.ENTITY_TYPE;
 import static com.bc.jpa.query.TestBaseForJpaQuery.SELECTED_PRODUCTID;
 import com.looseboxes.pu.entities.Product;
 import java.util.List;
 import org.junit.Test;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Aug 18, 2016 7:30:49 PM
@@ -41,12 +41,12 @@ public class TestSelectReset extends TestBaseForJpaQuery {
         final String [] colsToSearch = new String[]{"productName", "description", "keywords", "model"};
 
         
-        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
+        try(Select<Object[]> instance = createSelect(Object[].class)) {
         
             List<Object[]> results = instance
                     .search(ENTITY_TYPE, query, colsToSearch)
                     .and()
-                    .where(ID_COL, BuilderForSelect.GREATER_OR_EQUALS, SELECTED_PRODUCTID)
+                    .where(ID_COL, Select.GREATER_OR_EQUALS, SELECTED_PRODUCTID)
                     .select(colsToSelect)
                     .descOrder(ID_COL)
                     .createQuery().getResultList();
@@ -61,7 +61,7 @@ System.out.println("Product: "+product);
 
             List<Object[]> results2 = instance
                     .select(ENTITY_TYPE, colsToSelect)
-                    .where(ID_COL, BuilderForSelect.EQUALS, SELECTED_PRODUCTID)
+                    .where(ID_COL, Select.EQUALS, SELECTED_PRODUCTID)
                     .createQuery().getResultList();
             
 this.printResults(results2, true);

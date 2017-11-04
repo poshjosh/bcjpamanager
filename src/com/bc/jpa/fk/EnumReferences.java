@@ -1,6 +1,6 @@
 package com.bc.jpa.fk;
 
-import com.bc.jpa.EntityController;
+import com.bc.jpa.controller.EntityController;
 import java.util.List;
 import java.util.Map;
 

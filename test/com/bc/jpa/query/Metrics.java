@@ -16,10 +16,9 @@
 
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForSelectImpl;
-import com.bc.jpa.dao.BuilderForSelect;
-import com.bc.jpa.EntityController;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.dao.SelectImpl;
+import com.bc.jpa.controller.EntityController;
+import com.bc.jpa.context.JpaContext;
 import com.bc.jpa.dao.SelectDao;
 import com.looseboxes.pu.entities.Product;
 import java.util.List;
@@ -29,6 +28,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import org.junit.Test;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Aug 18, 2016 8:41:04 AM
@@ -64,7 +64,7 @@ public class Metrics extends TestBaseForJpaQuery {
 
     public void testEc(int maxResults, Object [] productids) {
         
-final long mb4 = Runtime.getRuntime().freeMemory(); final long tb4 = System.currentTimeMillis();
+final long mb4 = com.bc.util.Util.availableMemory(); final long tb4 = System.currentTimeMillis();
 
         EntityController<Product, ?> instance = this.getLbJpaContext().getEntityController(Product.class);
 System.out.println("================================: "+instance.getClass().getSimpleName());        
@@ -78,15 +78,15 @@ System.out.println("Found2: "+(found2==null?null:found2.size()));
         long count = instance.count();
 System.out.println("Count: "+count); 
 
-System.out.println("Spent. time: "+(System.currentTimeMillis()-tb4)+", memory: "+(mb4-Runtime.getRuntime().freeMemory()));
+System.out.println("Spent. time: "+(System.currentTimeMillis()-tb4)+", memory: "+(mb4-com.bc.util.Util.usedMemory(mb4)));
     }
 
     public void testSelect(int maxResults, Object [] productids) {
         
-final long mb4 = Runtime.getRuntime().freeMemory(); final long tb4 = System.currentTimeMillis();
+final long mb4 = com.bc.util.Util.availableMemory(); final long tb4 = System.currentTimeMillis();
 
-        try(BuilderForSelect<Product> instance = this.createSelect(Product.class)) {
-System.out.println("================================: "+BuilderForSelectImpl.class.getSimpleName());  
+        try(Select<Product> instance = this.createSelect(Product.class)) {
+System.out.println("================================: "+SelectImpl.class.getSimpleName());  
 
             List<Product> found = instance.from(Product.class)
                     .createQuery().setMaxResults(maxResults).getResultList();
@@ -99,19 +99,19 @@ System.out.println("Found: "+(found==null?null:found.size()));
                     .createQuery().getResultList();
 System.out.println("Found2: "+(found2==null?null:found2.size()));            
 
-            SelectDao<Long> selectLong = instance.forSelect(Long.class);
+            SelectDao<Long> selectLong = instance.selectInstance(Long.class);
         
             Long count = selectLong.getCriteria()
                     .from(Product.class).count().createQuery().getSingleResult();
 System.out.println("Count: "+count);            
         }
         
-System.out.println("Spent. time: "+(System.currentTimeMillis()-tb4)+", memory: "+(mb4-Runtime.getRuntime().freeMemory()));
+System.out.println("Spent. time: "+(System.currentTimeMillis()-tb4)+", memory: "+(mb4-com.bc.util.Util.usedMemory(mb4)));
     }
     
     public void testEm(int maxResults, Object [] productids) {
         
-final long mb4 = Runtime.getRuntime().freeMemory(); final long tb4 = System.currentTimeMillis();
+final long mb4 = com.bc.util.Util.availableMemory(); final long tb4 = System.currentTimeMillis();
 
         final Class<Product> entityClass = Product.class;
         final JpaContext jpaContext = this.getLbJpaContext();
@@ -157,7 +157,7 @@ System.out.println("Count: "+count);
             em.close();
         }
         
-System.out.println("Spent. time: "+(System.currentTimeMillis()-tb4)+", memory: "+(mb4-Runtime.getRuntime().freeMemory()));
+System.out.println("Spent. time: "+(System.currentTimeMillis()-tb4)+", memory: "+(mb4-com.bc.util.Util.usedMemory(mb4)));
     }
     
     private void sleep(long millis) {

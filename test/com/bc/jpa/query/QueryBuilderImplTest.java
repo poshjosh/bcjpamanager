@@ -1,6 +1,5 @@
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForSelect;
 import com.looseboxes.pu.entities.Orderproduct;
 import com.looseboxes.pu.entities.Product;
 import com.looseboxes.pu.entities.Productorder;
@@ -10,6 +9,7 @@ import java.util.List;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.JoinType;
 import org.junit.Test;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Josh
@@ -25,7 +25,7 @@ public class QueryBuilderImplTest extends TestBaseForJpaQuery {
         
 System.out.println("#testSearchAndWhereGreaterOrEquals");
 
-        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
+        try(Select<Object[]> instance = createSelect(Object[].class)) {
         
             final String ID_COL = "productid";
             final String query = "dress";
@@ -35,9 +35,9 @@ System.out.println("#testSearchAndWhereGreaterOrEquals");
             
             TypedQuery<Object[]> tq = instance.from(ENTITY_TYPE)
                     .select(colsToSelect)
-                    .where(colsToSearch, BuilderForSelect.LIKE, queryExpression, BuilderForSelect.OR)
+                    .where(colsToSearch, Select.LIKE, queryExpression, Select.OR)
                     .and()
-                    .where(ID_COL, BuilderForSelect.GREATER_OR_EQUALS, SELECTED_PRODUCTID)
+                    .where(ID_COL, Select.GREATER_OR_EQUALS, SELECTED_PRODUCTID)
                     .descOrder(ID_COL)
                     .createQuery();
             List<Object[]> results = tq.getResultList();
@@ -50,12 +50,12 @@ this.printResults(results, true);
         
 System.out.println("#testSelectAndLikeAndGreaterOrEquals");
         
-        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
+        try(Select<Object[]> instance = createSelect(Object[].class)) {
             
             TypedQuery<Object[]> tq = instance.from(ENTITY_TYPE)
                     .select("productid", "productName", "price", "description")
-                    .where("productName", BuilderForSelect.LIKE, "%pepperts%", BuilderForSelect.AND)
-                    .where("productid", BuilderForSelect.GREATER_OR_EQUALS, SELECTED_PRODUCTID - 100)
+                    .where("productName", Select.LIKE, "%pepperts%", Select.AND)
+                    .where("productid", Select.GREATER_OR_EQUALS, SELECTED_PRODUCTID - 100)
                     .ascOrder("productid")
                     .createQuery();
 
@@ -85,7 +85,7 @@ this.printResults(results, true);
                 
                 productvariant = variant;
                 
-                try(BuilderForSelect<Productorder> instance = createSelect(Productorder.class)) {
+                try(Select<Productorder> instance = createSelect(Productorder.class)) {
                     
                     TypedQuery<Productorder> tq = 
                             instance.where(Orderproduct.class, "productvariantid", variant)
@@ -107,7 +107,7 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
     @Test
     public void testResetAndCommit() {
         
-        try(BuilderForSelect<Product> instance = createSelect(ENTITY_TYPE)) {
+        try(Select<Product> instance = createSelect(ENTITY_TYPE)) {
         
             final String COLUMN = "productid";
 
@@ -123,7 +123,7 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
 
 //            instance.reset();
 
-//            tq = instance.from(ENTITY_TYPE).where(COLUMN, BuilderForSelect.EQUALS, 519).descOrder(COLUMN).createQuery();
+//            tq = instance.from(ENTITY_TYPE).where(COLUMN, Select.EQUALS, 519).descOrder(COLUMN).createQuery();
 
 //            Product result = tq.getSingleResult();
         }
@@ -132,7 +132,7 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
     @Test
     public void testComplex() {
         
-        try(BuilderForSelect<Object[]> instance = createSelect(Object[].class)) {
+        try(Select<Object[]> instance = createSelect(Object[].class)) {
         
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DAY_OF_YEAR, -20);
@@ -140,8 +140,8 @@ System.out.println("Variant: "+productvariant+"\nOrders: "+orders);
             TypedQuery<Object[]> tq = instance.from(ENTITY_TYPE)
                     .select("productid", "productName", "price")
                     .search("girls dress", "productName", "description", "keywords", "model")
-                    .and().where("price", BuilderForSelect.GREATER_OR_EQUALS, 2_000)
-                    .and().where("datecreated", BuilderForSelect.LESS_OR_EQUALS, cal.getTime())
+                    .and().where("price", Select.GREATER_OR_EQUALS, 2_000)
+                    .and().where("datecreated", Select.LESS_OR_EQUALS, cal.getTime())
                     .descOrder("productid")
                     .createQuery();
 

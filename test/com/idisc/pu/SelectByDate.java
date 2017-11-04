@@ -1,7 +1,7 @@
 package com.idisc.pu;
 
-import com.bc.jpa.EntityController;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.controller.EntityController;
+import com.bc.jpa.context.JpaContext;
 import com.bc.jpa.dao.Criteria.ComparisonOperator;
 import com.bc.util.XLogger;
 import java.util.ArrayList;
@@ -13,7 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import com.bc.jpa.dao.BuilderForSelect;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Aug 13, 2016 8:52:24 AM
@@ -73,7 +73,7 @@ public class SelectByDate<E, I> {
 
             List<E> batch;
             
-            try(BuilderForSelect<E> qb = jpaContext.getBuilderForSelect(entityType)) {
+            try(Select<E> qb = jpaContext.getDaoForSelect(entityType)) {
                 
                 if(date == null) {
                     batch = qb.from(entityType).createQuery().setFirstResult(offset).setMaxResults(batchSize).getResultList();

@@ -1,7 +1,7 @@
 package com.idisc.pu;
 
 import com.idisc.pu.entities.Comment;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 
 /**
  * @author Josh

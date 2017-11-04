@@ -16,12 +16,12 @@
 
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForSelect;
 import com.looseboxes.pu.entities.Product;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Jul 26, 2016 6:09:26 PM
@@ -40,7 +40,7 @@ public class QueryBuilderTestMisc extends TestBaseForJpaQuery {
         where.put("fakecolumn_0", "fakevalue_0");
         where.put("fakecolumn_1", null);
         
-        try(BuilderForSelect<Integer> qb = this.createSelect(Integer.class)) {
+        try(Select<Integer> qb = this.createSelect(Integer.class)) {
             
             List<Integer> found = qb.select(Product.class, "productid")
             .where(where).createQuery().setMaxResults(10).getResultList();

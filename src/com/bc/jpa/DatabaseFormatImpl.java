@@ -1,13 +1,16 @@
 package com.bc.jpa;
 
-import com.bc.jpa.fk.EnumReferences;
+import com.bc.jpa.EntityReference;
+import com.bc.jpa.context.PersistenceUnitContext;
 import com.bc.jpa.dao.DatabaseFormat;
 import com.bc.sql.SQLDateTimePatterns;
 import com.bc.sql.SQLUtils;
 import com.bc.util.XLogger;
 import java.lang.reflect.Field;
 import java.sql.Types;
+import java.util.Objects;
 import java.util.logging.Level;
+import javax.persistence.EntityManager;
 import javax.persistence.JoinColumn;
 
 
@@ -40,23 +43,24 @@ public class DatabaseFormatImpl implements DatabaseFormat {
 
     private final SQLDateTimePatterns dateTimePatterns;
     
-    private final JpaContext jpaContext;
+    private final PersistenceUnitContext persistenceUnitContext;
+    
+    private final EntityReference entityReference;
+    
+    private final EntityManager entityManager;
 
     public DatabaseFormatImpl(
-            JpaContext jpaContext, SQLDateTimePatterns dateTimePatterns) { 
-        
-        this.jpaContext = jpaContext;
-        this.dateTimePatterns = dateTimePatterns;
+            PersistenceUnitContext persistenceUnitContext, SQLDateTimePatterns dateTimePatterns) { 
+        this.persistenceUnitContext = Objects.requireNonNull(persistenceUnitContext);
+        this.dateTimePatterns = Objects.requireNonNull(dateTimePatterns);
+        this.entityReference = persistenceUnitContext.getPersistenceContext().getEntityReference();
+        this.entityManager = persistenceUnitContext.getEntityManager();
     }
 
     public final SQLDateTimePatterns getDateTimePatterns() {
         return dateTimePatterns;
     }
 
-    public final JpaContext getJpaContext() {
-        return jpaContext;
-    }
-    
     @Override
     public Object toDatabaseFormat(Class entityType, Object key, Object value, Object outputIfNone) {
         
@@ -100,7 +104,7 @@ this.getClass(), key, value, output);
     public Object getSQLValue(Class entityType, Object key, Object value) {
         Object sqlObj = null;
         try{
-long mb4 = Runtime.getRuntime().freeMemory();
+long mb4 = com.bc.util.Util.availableMemory();
 long tb4 = System.currentTimeMillis();
             Field field = entityType.getDeclaredField(key.toString());
             if(field != null) {
@@ -122,7 +126,7 @@ this.getClass(), key, value==null?null:value.getClass().getName(), value);
                         }
                         
 XLogger.getInstance().log(Level.FINER, "Spent:: memory: {0}, time: {1}, converting: {2} to SQL value: {3}", 
-this.getClass(), mb4-Runtime.getRuntime().freeMemory(), System.currentTimeMillis()-tb4, value, sqlObj);
+this.getClass(), mb4-com.bc.util.Util.usedMemory(mb4), System.currentTimeMillis()-tb4, value, sqlObj);
                     }
                 }else{
                     JoinColumn joinColumn = field.getAnnotation(JoinColumn.class);
@@ -132,7 +136,7 @@ this.getClass(), entityType, key, joinColumn);
                         try{
                             sqlObj = Integer.parseInt(value.toString());
 XLogger.getInstance().log(Level.FINER, "Spent:: memory: {0}, time: {1}, converting: {2} to SQL value: {3}", 
-this.getClass(), mb4-Runtime.getRuntime().freeMemory(), System.currentTimeMillis()-tb4, value, sqlObj);
+this.getClass(), mb4-com.bc.util.Util.usedMemory(mb4), System.currentTimeMillis()-tb4, value, sqlObj);
                         }catch(NumberFormatException ignored) { }
                     }
                 }
@@ -146,7 +150,7 @@ this.getClass(), mb4-Runtime.getRuntime().freeMemory(), System.currentTimeMillis
     @Override
     public boolean isDatabaseColumn(Class entityType, Object key) {
         boolean output = false;
-        final String [] cols = this.getJpaContext().getMetaData().getColumnNames(entityType);
+        final String [] cols = this.persistenceUnitContext.getMetaData().getColumnNames(entityType);
         synchronized(cols) {
             String sval = key.toString();
             for(String col:cols) {
@@ -163,17 +167,11 @@ this.getClass(), key, output);
     
     public Object getReference(Class entityType, Object key, Object value) {
 XLogger.getInstance().log(Level.FINER, "Column: {0}, value: {1}", this.getClass(), key, value);
-        String col = key.toString();
+        final String col = key.toString();
         
-        EnumReferences enumReferences = this.jpaContext.getEnumReferences();
+        final Object reference = entityReference.getReference(
+                entityManager, entityType, col, value);
         
-        // May be an enum reference
-        Object reference = enumReferences == null ? null : enumReferences.getEntity(col, value);
-        
-        if(reference == null) {
-            // Or an ordinary reference
-            reference = this.getJpaContext().getReference(entityType, col, value);
-        }
 XLogger.getInstance().log(Level.FINER, "Column: {0}, value: {1}, entity: {2}", this.getClass(), key, value, reference);
         return reference;
     }

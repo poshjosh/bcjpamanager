@@ -1,7 +1,6 @@
 package com.bc.jpa.query;
 
-import com.bc.jpa.dao.BuilderForSelect;
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 import com.looseboxes.pu.entities.Orderproduct;
 import com.looseboxes.pu.entities.Productorder;
 import javax.persistence.EntityManager;
@@ -11,6 +10,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Josh
@@ -32,7 +32,7 @@ public class QueryBuilderImplTest_Sum extends TestBaseForJpaQuery {
 
 System.out.println("MODE 1: QueryBuilder#sum");        
         Number sum0 = null;
-        try(BuilderForSelect<Number> qb = jpaContext.getBuilderForSelect(Orderproduct.class, Number.class)) {
+        try(Select<Number> qb = jpaContext.getDaoForSelect(Orderproduct.class, Number.class)) {
             sum0 = qb.from(Orderproduct.class)
             .sum(columnToSelect)
             .where(columnToSearch, orderId)

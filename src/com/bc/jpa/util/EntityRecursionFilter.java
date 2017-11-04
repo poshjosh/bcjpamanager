@@ -28,7 +28,7 @@ public class EntityRecursionFilter implements MapBuilder.RecursionFilter {
     public EntityRecursionFilter() { }
 
     @Override
-    public boolean shouldRecurse(Class valueType, Object value) {
+    public boolean test(Class valueType, Object value) {
         
         final Annotation entityAnnotation = valueType.getAnnotation(Entity.class);
         

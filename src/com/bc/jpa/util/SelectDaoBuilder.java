@@ -16,7 +16,7 @@
 
 package com.bc.jpa.util;
 
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 import com.bc.jpa.dao.SelectDao;
 import java.util.Collection;
 

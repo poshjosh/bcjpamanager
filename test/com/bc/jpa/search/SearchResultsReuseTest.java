@@ -32,9 +32,9 @@ public class SearchResultsReuseTest extends SearchResultsTestBase {
     
     @Test
     public void testReuse() {
-        if(true) {
-            throw new UnsupportedOperationException();
-        }
+//        if(true) {
+//            throw new UnsupportedOperationException();
+//        }
             BaseSearchResults<Product> searchresults = 
                 this.createInstance(TestApp.getInstance().getLbJpaContext(), 
                 Product.class, Product.class, "1 year", 100, true);

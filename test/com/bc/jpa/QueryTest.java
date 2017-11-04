@@ -1,5 +1,6 @@
 package com.bc.jpa;
 
+import com.bc.jpa.context.JpaContext;
 import com.idisc.pu.entities.Feed;
 import java.util.List;
 import javax.persistence.EntityManager;

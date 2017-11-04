@@ -5,7 +5,7 @@ import com.looseboxes.pu.entities.Country;
 import com.looseboxes.pu.entities.Currency;
 import com.looseboxes.pu.entities.Region;
 import com.looseboxes.pu.entities.Siteuser;
-import com.bc.jpa.EntityController;
+import com.bc.jpa.controller.EntityController;
 import com.bc.jpa.fk.EnumReferences;
 import java.io.File;
 import java.util.Date;

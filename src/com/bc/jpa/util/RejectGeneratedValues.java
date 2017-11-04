@@ -26,7 +26,7 @@ import javax.persistence.GeneratedValue;
 public class RejectGeneratedValues implements MapBuilder.MethodFilter{
 
     @Override
-    public boolean accept(Class type, Object object, Method method, String columnName) {
+    public boolean test(Class type, Object object, Method method, String columnName) {
         try{
             return type.getDeclaredField(columnName).getAnnotation(GeneratedValue.class) == null;
         }catch(NoSuchFieldException e) {

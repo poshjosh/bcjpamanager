@@ -1,13 +1,13 @@
 package com.idisc.pu;
 
-import com.bc.jpa.JpaContext;
+import com.bc.jpa.context.JpaContext;
 import com.idisc.pu.entities.Site;
 import com.idisc.pu.entities.Sitetype;
 import java.util.Date;
 import java.util.List;
-import com.bc.jpa.dao.BuilderForSelect;
 import com.idisc.pu.entities.Timezone;
 import java.util.Objects;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Aug 13, 2016 9:25:31 AM
@@ -31,7 +31,7 @@ public class Sites {
     
     Site output;   
     
-    try(BuilderForSelect<Site> qb = jpaContext.getBuilderForSelect(Site.class)) {
+    try(Select<Site> qb = jpaContext.getDaoForSelect(Site.class)) {
       qb.from(Site.class);
       if (siteName != null) {
         qb.where("site", siteName);

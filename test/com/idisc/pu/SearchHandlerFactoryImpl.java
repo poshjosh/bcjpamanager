@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import com.bc.jpa.JpaContext;
-import com.bc.jpa.dao.BuilderForSelect;
+import com.bc.jpa.context.JpaContext;
 import com.bc.util.XLogger;
 import java.util.logging.Level;
+import com.bc.jpa.dao.Select;
 
 /**
  * @author Josh
@@ -27,14 +27,14 @@ public class SearchHandlerFactoryImpl implements SearchHandlerFactory {
     
     private final Lock lock;
     
-    private final JpaContext cf;
+    private final JpaContext jpaContext;
     
     private final Map<Class, Map<String, SearchResults>> typeCache;
     
-    public SearchHandlerFactoryImpl(JpaContext cf) {
+    public SearchHandlerFactoryImpl(JpaContext jpaContext) {
         this.cacheSize = 8;
         this.lock = new ReentrantLock();
-        this.cf = cf;
+        this.jpaContext = jpaContext;
         this.typeCache = Collections.synchronizedMap(new HashMapNoNulls(cacheSize, 0.75f));
     }
     
@@ -177,7 +177,7 @@ public class SearchHandlerFactoryImpl implements SearchHandlerFactory {
         Integer limit = parameters == null || parameters.get("limit") == null ? 20 : (Integer)parameters.get("limit");
         Date after = parameters == null ? null : (Date)parameters.get("after");
         
-        BuilderForSelect queryBuilder = this.createQueryBuilder(entityType, query, after, 0, limit);
+        Select queryBuilder = this.createQueryBuilder(entityType, query, after, 0, limit);
         
         return new BaseSearchResults(queryBuilder, limit, true);
     } 
@@ -192,22 +192,22 @@ public class SearchHandlerFactoryImpl implements SearchHandlerFactory {
         }
     }
 
-    protected <E> BuilderForSelect<E> createQueryBuilder(Class<E> resultType, String query, Date after, int offset, int limit) {
-        BuilderForSelect queryBuilder;
+    protected <E> Select<E> createQueryBuilder(Class<E> resultType, String query, Date after, int offset, int limit) {
+        Select queryBuilder;
         final String dateColumn;
         if(resultType == Feed.class) {
-            queryBuilder = new FeedDao(cf, offset, limit, query);
+            queryBuilder = new FeedDao(jpaContext, offset, limit, query);
             dateColumn = "feeddate";
         }else if(resultType == Comment.class) {
-            queryBuilder = new CommentDao(cf, offset, limit, query);
+            queryBuilder = new CommentDao(jpaContext, offset, limit, query);
             dateColumn = "datecreated";
         }else{
-            queryBuilder = new SearchDao(cf, resultType, offset, limit, query);
+            queryBuilder = new SearchDao(jpaContext, resultType, offset, limit, query);
             dateColumn = null;
         }
         
         if(after != null && dateColumn != null) {
-            queryBuilder.where(resultType, dateColumn, BuilderForSelect.GREATER_THAN, after);
+            queryBuilder.where(resultType, dateColumn, Select.GREATER_THAN, after);
         }
         return queryBuilder;
     }

@@ -16,11 +16,11 @@
 
 package com.bc.jpa.query;
 
-import com.bc.jpa.JpaContext;
-import com.bc.jpa.dao.BuilderForSelect;
-import com.bc.jpa.dao.BuilderForUpdate;
+import com.bc.jpa.context.JpaContext;
 import com.idisc.pu.entities.Feed;
 import org.junit.Test;
+import com.bc.jpa.dao.Select;
+import com.bc.jpa.dao.Update;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Aug 18, 2016 11:08:27 AM
@@ -39,13 +39,13 @@ public class UpdateTest extends TestBaseForJpaQuery {
         final Integer ID = 527501;
 System.out.println("ID: "+ID); 
 
-        int updateCount = jpaContext.getBuilderForUpdate(Feed.class)
+        int updateCount = jpaContext.getDaoForUpdate(Feed.class)
                     .begin()
                     .where(Feed.class, "feedid", ID).set("extradetails", "JESUS IS LORD")
                     .finish();
 System.out.println("Update count: "+updateCount);            
         
-        try(BuilderForSelect<String> b = jpaContext.getBuilderForSelect(String.class)) {
+        try(Select<String> b = jpaContext.getDaoForSelect(String.class)) {
 
             final String extraDetails = b.getCriteria()
                     .where("feedid", ID)
@@ -53,7 +53,7 @@ System.out.println("Update count: "+updateCount);
 System.out.println("Extradetails: "+extraDetails);            
         }
 
-        try(BuilderForUpdate<Feed> b = jpaContext.getBuilderForUpdate(Feed.class)) {
+        try(Update<Feed> b = jpaContext.getDaoForUpdate(Feed.class)) {
 
             updateCount = b.begin()
                     .where(Feed.class, "feedid", ID).set("extradetails", null)
@@ -61,7 +61,7 @@ System.out.println("Extradetails: "+extraDetails);
 System.out.println("Update count: "+updateCount);            
         }
 
-        try(BuilderForSelect<String> b = jpaContext.getBuilderForSelect(String.class)) {
+        try(Select<String> b = jpaContext.getDaoForSelect(String.class)) {
 
             final String extraDetails = b
                     .where("feedid", ID)

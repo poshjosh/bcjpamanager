@@ -16,11 +16,11 @@
 
 package com.bc.jpa.search;
 
-import com.bc.jpa.EntityUpdater;
-import com.bc.jpa.JpaContext;
-import com.bc.jpa.JpaMetaData;
-import com.bc.jpa.dao.BuilderForSelect;
+import com.bc.jpa.context.PersistenceUnitContext;
 import com.bc.jpa.dao.Criteria;
+import com.bc.jpa.dao.Select;
+import com.bc.jpa.functions.GetColumnNamesOfType;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -29,124 +29,94 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.function.Function;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on May 20, 2017 4:18:37 AM
+ * @author Chinomso Bassey Ikwuagwu on Oct 28, 2017 1:58:39 PM
  */
-public class TextSearchImpl implements TextSearch {
+public class TextSearchImpl implements TextSearch, Serializable {
     
-    private final JpaContext jpaContext;
+    private final PersistenceUnitContext persistenceUnitContext;
     
     private final Map<String, Method[]> methodsCache;
     
-    public TextSearchImpl(JpaContext jpaContext) {
-        this.jpaContext = Objects.requireNonNull(jpaContext);
+    public TextSearchImpl(PersistenceUnitContext persistenceUnitContext) {
+        this.persistenceUnitContext = Objects.requireNonNull(persistenceUnitContext);
         this.methodsCache = new WeakHashMap<>();
     }
     
-    /**
-     * <p>Part count of the input value is reduced by the supplied factor before
-     * being used as search text</p>
-     * <table>
-     *   <tr>
-     *     <th>Value</th><th>Minimum parts</th><th>Factor</th><th>Actual text to find</th>
-     *   </tr>
-     *   <tr>
-     *     <td>SOME FAKE VALUE</td><td>2</td><td>0.67</td><td>SOME FAKE</td>
-     *   </tr>
-     *   <tr>
-     *     <td>SOME FAKE VALUE</td><td>3</td><td>0.67</td><td>SOME FAKE VALUE</td>
-     *   </tr>
-     *   <tr>
-     *     <td>SOME FAKE VALUE I COOKED UP</td><td>4</td><td>0.67</td><td>SOME FAKE VALUE I</td>
-     *   </tr>
-     * </table>
-     * @param <T> The generic type of the entity 
-     * @param entityType The type of the entity
-     * @param value The value to be resolved into the text to be searched for
-     * @param minimumParts The minimum parts the input value must have to be eligible for reduction
-     * @param factor The factor by which part count of the input value is reduced.
-     * @return The list of entities matching the text that was searched
-     * @see #getSearchText(java.lang.Object, float) 
-     * @see #search(java.lang.Class, java.lang.String) 
-     */
     @Override
-    public <T> List<T> search(Class<T> entityType, Object value, int minimumParts, float factor) {
+    public <T> List<T> search(Class<T> entityType, Object value, int minimumParts, 
+            float factor, Function<Query, Query> queryFormatter) {
         
         final String text = this.getParts(value).size() > minimumParts 
                 ? this.getSearchText(value, factor) : value.toString();
         
-        return this.search(entityType, text);
+        return this.search(entityType, text, queryFormatter);
     }
 
-    /**
-     * Search all <code>text type</code> columns of the specified entity type
-     * for the specified text.
-     * @param <T> The generic type of the entity 
-     * @param entityType The type of the entity
-     * @param text The text to search for
-     * @param c The SQL comparison operator e.g 
-     * {@link com.bc.jpa.dao.Criteria.ComparisonOperator#EQUALS EQUALS}
-     * OR {@link com.bc.jpa.dao.Criteria.ComparisonOperator#LIKE LIKE} etc
-     * @return The list of entities matching the text that was searched
-     */
     @Override
-    public <T> List<T> search(Class<T> entityType, String text, Criteria.ComparisonOperator c) {
+    public <T> List<T> search(Class<T> entityType, String text, 
+            Criteria.ComparisonOperator c, Function<Query, Query> queryFormatter) {
         
         Objects.requireNonNull(entityType);
         Objects.requireNonNull(text);
         Objects.requireNonNull(c);
         
-        final List foundList;
+        final List<T> foundList;
         
-        try(final BuilderForSelect<?> dao = this.jpaContext.getBuilderForSelect(entityType)) {
+        try(final Select<T> dao = this.persistenceUnitContext.getDao().forSelect(entityType)) {
 
-            final Collection<String> columnsToSearch = this.getColumnNamesToSearch(entityType);
+            final Collection<String> columnsToSearch = 
+                    new GetColumnNamesOfType(this.persistenceUnitContext).apply(entityType, String.class);
 
-            final Map<String, String> params = new HashMap<>();
-            for(String column : columnsToSearch) {
-                params.put(column, text);
+            final Map<String, String> params;
+            if(columnsToSearch.isEmpty()) {
+                params = Collections.EMPTY_MAP;
+            }else if(columnsToSearch.size() == 1) {
+                params = Collections.singletonMap(columnsToSearch.toArray(new String[0])[0], text);
+            }else{
+                params = new HashMap<>();
+                for(String column : columnsToSearch) {
+                    params.put(column, text);
+                }
             }
             
-            foundList = dao
-                    .where(entityType, c, Criteria.OR, params)
-                    .createQuery()
-                    .getResultList();
+            final TypedQuery<T> query = dao
+                    .from(entityType).where(c, Criteria.OR, params)
+                    .createQuery();
+                    
+            foundList = queryFormatter.apply(query).getResultList();
         }    
         
         return foundList;
     }
     
-    /**
-     * Search all <code>text type</code> columns of the specified entity type
-     * for the specified text using the SQL <code>LIKE</code> keyword.
-     * @param <T> The generic type of the entity 
-     * @param entityType The type of the entity
-     * @param text The text to search for
-     * @return The list of entities matching the text that was searched
-     */
     @Override
-    public <T> List<T> search(Class<T> entityType, String text) {
+    public <T> List<T> search(Class<T> entityType, String text, 
+            Function<Query, Query> queryFormatter) {
         
         Objects.requireNonNull(entityType);
         Objects.requireNonNull(text);
         
-        final List foundList;
+        final List<T> foundList;
         
-        try(final BuilderForSelect<?> dao = this.jpaContext.getBuilderForSelect(entityType)) {
+        try(final Select<T> dao = this.persistenceUnitContext.getDao().forSelect(entityType)) {
 
-            final Collection<String> columnsToSearch = this.getColumnNamesToSearch(entityType);
+            final Collection<String> columnsToSearch = 
+                    new GetColumnNamesOfType(this.persistenceUnitContext).apply(entityType, String.class);
 
-            foundList = dao
-                    .search(entityType, text.trim(), columnsToSearch)
-                    .createQuery()
-                    .getResultList();
+            final TypedQuery<T> query = dao
+                    .from(entityType).search(text.trim(), columnsToSearch)
+                    .createQuery();
+                    
+            foundList = queryFormatter.apply(query).getResultList();
         }    
         
         return foundList;
@@ -163,7 +133,7 @@ public class TextSearchImpl implements TextSearch {
         
         for(Method method : methods) {
             if(method.getName().startsWith("get")) {
-                if(!textTypesOnly || method.getReturnType() == String.class) {
+                if(!textTypesOnly || method.getReturnType().equals(String.class)) {
                     
                     try{
                         
@@ -192,25 +162,6 @@ public class TextSearchImpl implements TextSearch {
         return methods;
     }
     
-    @Override
-    public Collection<String> getColumnNamesToSearch(Class entityType) {
-        
-        final Set<String> output = new LinkedHashSet();
-        
-        final JpaMetaData metaData = this.jpaContext.getMetaData();
-        final String [] columnNames = metaData.getColumnNames(entityType);
-        final EntityUpdater updater = this.jpaContext.getEntityUpdater(entityType);
-        
-        for(String columnName : columnNames) {
-            final Method method = updater.getMethod(false, columnName);
-            if(method.getReturnType() == String.class) {
-                output.add(columnName);
-            }
-        }
-        
-        return output;
-    }
-
     @Override
     public String getSearchText(Object value, float factor) {
         
@@ -255,7 +206,7 @@ public class TextSearchImpl implements TextSearch {
         final String sval = value.toString();
         
         final List<String> parts = new ArrayList(Arrays.asList(sval.split("\\s{1,}")));
-//System.out.println("BEFORE Parts: "+parts+". @"+TextSearchImpl.class);            
+//System.out.println("BEFORE Parts: "+parts+". @"+TextSearchDeprecated.class);            
         final Iterator<String> iter = parts.iterator();
         
         while(iter.hasNext()) {
@@ -267,7 +218,7 @@ public class TextSearchImpl implements TextSearch {
                 iter.remove();
             }
         }
-//System.out.println(" AFTER Parts: "+parts+". @"+TextSearchImpl.class);                                
+//System.out.println(" AFTER Parts: "+parts+". @"+TextSearchDeprecated.class);                                
         return Collections.unmodifiableList(parts);
     }    
 }
