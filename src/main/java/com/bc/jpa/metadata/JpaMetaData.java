@@ -75,21 +75,4 @@ public interface JpaMetaData extends PersistenceMetaData, PersistenceUnitMetaDat
      */
     @Deprecated
     Class findEntityClass(String tableName);
-    
-    /**
-     * @param entityClass
-     * @return
-     * @deprecated
-     */
-    @Deprecated
-    String getPersistenceUnitName(Class entityClass);
-    
-    /**
-     * @param database The name of the database whose persistence unit will be returned
-     * @return The persistence unit for the database name argument
-     * @deprecated REASON: Database name should not be hard-coded into an 
-     * application i.e One shouldn't be working with database names directly
-     */
-    @Deprecated
-    String getPersistenceUnitName(String database);
 }

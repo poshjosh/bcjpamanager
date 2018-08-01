@@ -4,16 +4,12 @@ import com.bc.jpa.EntityReference;
 import com.bc.jpa.EntityReferenceImpl;
 import com.bc.jpa.context.JpaContext;
 import com.bc.node.Node;
-import com.bc.node.NodeValueTest;
 import com.bc.xml.PersistenceXmlDomImpl;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -21,8 +17,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.JoinColumn;
@@ -97,9 +91,7 @@ import javax.persistence.TemporalType;
  */
 public class JpaMetaDataImpl implements JpaMetaData, Serializable {
 
-    private static final Logger logger = Logger.getLogger(JpaMetaDataImpl.class.getName());
-    
-    private final Map<String, Set<Class>> persistenceUnitClasses;
+    private transient static final Logger LOG = Logger.getLogger(JpaMetaDataImpl.class.getName());
     
     private final EntityReference entityReference;
     
@@ -124,36 +116,10 @@ public class JpaMetaDataImpl implements JpaMetaData, Serializable {
         
         final List<String> puNames = pudom.getPersistenceUnitNames();
         
-        final String name = puNames.stream().findFirst().orElseThrow(() -> 
-                new IllegalStateException("File does not specify any persistence unit(s): " + persistenceUri));
+        final String name = puNames.get(0);
+        Objects.requireNonNull(name);
         
         this.unitMetaData = metaData.getMetaData(name);
-        
-        final Map<String, Set<Class>> pu2cls = new LinkedHashMap<>(puNames.size(), 1.0f);
-        
-        for(String puName : puNames) {
-
-            final List<String> puClsNames = pudom.getClassNames(puName);
-            
-            final Set<Class> puClasses = new LinkedHashSet<>(puClsNames.size());
-            
-            for(String puClsName:puClsNames) {
-                
-                try {
-                    
-                    puClasses.add(Class.forName(puClsName));
-                    
-                }catch(ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            
-            pu2cls.put(puName, puClasses);
-        }
-        
-        this.persistenceUnitClasses = Collections.unmodifiableMap(pu2cls);
-        
-        logger.log(Level.FINE, "{0}", this.persistenceUnitClasses);
         
         // This must come last
         //
@@ -191,11 +157,13 @@ public class JpaMetaDataImpl implements JpaMetaData, Serializable {
 
     @Override
     public Class findEntityClass(String tablename) {
+        
         if(tablename == null) {
             throw new NullPointerException();
         }
         Class entityClass = null;
-        for(String puName : this.persistenceUnitClasses.keySet()) {
+        final Map<String, Set<Class>> classesMap = this.metaData.getPersistenceUnitClasses();
+        for(String puName : classesMap.keySet()) {
             Set<Class> puClasses = this.getEntityClasses(puName);
 //System.out.println("PU: "+puName+", classes: "+(Arrays.toString(puClasses)));            
             for(Class puClass:puClasses) {
@@ -207,59 +175,6 @@ public class JpaMetaDataImpl implements JpaMetaData, Serializable {
             
         }
         return entityClass;
-    }
-    
-    @Override
-    public String getPersistenceUnitName(Class aClass) {
-        
-        for(String puName : persistenceUnitClasses.keySet()) {
-            
-            if(persistenceUnitClasses.get(puName).contains(aClass)) {
-                
-                return puName;
-            }
-        }
-        
-        return null;
-    }
-
-    @Override
-    public String getPersistenceUnitName(String database) {
-        final Node<String> dbNode = this.findFirstNodeOrException(this.getNode(), 2, database);
-        final Node<String> puNode = Objects.requireNonNull(
-                dbNode.getParentOrDefault(null), () -> "Orphan database node: " + dbNode
-        );
-        return Objects.requireNonNull(
-                puNode.getValueOrDefault(null), () -> "Missing value for node: " + puNode
-        );
-    }
-
-    public Node<String> findFirstNodeOrException(Node<String> offset, int nodeLevel, String nodeValue) {
-        final Predicate<Node<String>> nodeTest = this.getNodeTest(nodeLevel, nodeValue);
-        final Node<String> node = offset.findFirstChild(nodeTest).orElseThrow(
-                () -> getIllegalArgumentException(nodeLevel, nodeValue)
-        );
-        return node;
-    }
-    
-    private RuntimeException getIllegalArgumentException(int nodeLevel, String nodeValue) {
-        return new IllegalArgumentException("Unexpected " + this.getLevelName(nodeLevel) + " name: " + nodeValue);
-    }
-
-    public final String getLevelName(int offset) {
-        switch(offset) {
-            case PersistenceNodeBuilder.NODE_LEVEL_PERSISTENCE: return "persistence";
-            case PersistenceNodeBuilder.NODE_LEVEL_PERSISTENCE_UNIT: return "persistence-unit";
-            case PersistenceNodeBuilder.NODE_LEVEL_CATALOG: return "catalog";
-            case PersistenceNodeBuilder.NODE_LEVEL_SCHEMA: return "schema";
-            case PersistenceNodeBuilder.NODE_LEVEL_TABLE: return "table";
-            case PersistenceNodeBuilder.NODE_LEVEL_COLUMN: return "column";
-            default: throw new IllegalArgumentException("Unexpected persistence offset. Possible values: 0=persisence,1=persistenceUnit,2=catalog/database,3=schema,4=table,5=column");
-        }
-    }
-
-    private Predicate<Node<String>> getNodeTest(int level, String value) {
-        return new NodeValueTest(level, value, false);
     }
     
     @Override

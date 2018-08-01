@@ -90,6 +90,7 @@ public class JpaContextImpl implements JpaContext, Serializable {
             URI persistenceURI, SQLDateTimePatterns dateTimePatterns, Class [] enumRefClasses) { 
 
         this.puName = new PersistenceXmlDomImpl(persistenceURI).getPersistenceUnitNames().get(0);
+        Objects.requireNonNull(puName);
 
         this.persistenceURI = Objects.requireNonNull(persistenceURI);
 
@@ -117,30 +118,28 @@ public class JpaContextImpl implements JpaContext, Serializable {
     
     @Override
     public EntityManagerFactory getEntityManagerFactory(Class entityClass) { 
-    
-        final String persistenceUnit = this.metaData.getPersistenceUnitName(entityClass);
         
-        return this.getEntityManagerFactory(persistenceUnit);
+        return this.getEntityManagerFactory(this.puName);
     }
 
     @Override
-    public <T> Select<T> getDaoForSelect(Class<T> entityAndResultType) {
-        return this.getDaoForSelect(entityAndResultType, entityAndResultType);
+    public <T> Select<T> getDaoForSelect(Class<T> resultType) {
+        return this.getDao().forSelect(resultType);
     }
     
     @Override
     public <T> Select<T> getDaoForSelect(Class entityType, Class<T> resultType) {
-        return this.getDao(entityType).forSelect(resultType).from(entityType);
+        return this.getDao().forSelect(resultType).from(entityType);
     }
 
     @Override
     public <T> Update<T> getDaoForUpdate(Class<T> entityType) {
-        return this.getDao(entityType).forUpdate(entityType).from(entityType);
+        return this.getDao().forUpdate(entityType).from(entityType);
     }
 
     @Override
     public <T> Delete<T> getDaoForDelete(Class<T> entityType) {
-        return this.getDao(entityType).forDelete(entityType).from(entityType);
+        return this.getDao().forDelete(entityType).from(entityType);
     }
     
     @Override
@@ -326,8 +325,8 @@ public class JpaContextImpl implements JpaContext, Serializable {
     public PersistenceContext getPersistenceContext() {
         if(persistenceContext == null) {
             try{
-                this.persistenceContext = new PersistenceContextImpl(
-                        persistenceURI, 
+                this.persistenceContext = new PersistenceContextEclipselinkOptimized(
+                        this.persistenceURI, 
                         new EntityManagerFactoryCreatorImpl(
                                 persistenceURI,
                                 (persistenceUnit) -> JpaContextImpl.this.getPersistenceUnitProperties(persistenceUnit)

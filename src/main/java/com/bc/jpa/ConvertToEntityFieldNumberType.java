@@ -62,7 +62,7 @@ public class ConvertToEntityFieldNumberType implements Serializable {
                 }
             }
         }catch(RuntimeException | NoSuchFieldException ignored) { 
-            LOG.log(Level.FINE, "{0}", ignored);
+            LOG.log(Level.FINE, "{0}", ignored.toString());
         }
         
         if(LOG.isLoggable(Level.FINER)) {

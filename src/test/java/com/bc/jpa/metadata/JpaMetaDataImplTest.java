@@ -106,14 +106,6 @@ System.out.println(" Column names: "+Arrays.toString(columnNames));
         assertEquals(entityClass, expectedClass);
         
         jpaMetaData.getIdColumnName(entityClass);
-        
-        final String entityPuName = jpaMetaData.getPersistenceUnitName(entityClass);
-        
-        assertEquals(puName, entityPuName);
-        
-        final String databasePuName = jpaMetaData.getPersistenceUnitName(database);
-        
-        assertEquals(puName, databasePuName);
     }
     
     private void test(String key, String [] columnNames, int [] intArr) {

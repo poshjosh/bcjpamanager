@@ -42,7 +42,7 @@ public interface JpaContext extends PersistenceContext, PersistenceUnitContext {
      * @deprecated
      */        
     @Deprecated
-    <T> Select<T> getDaoForSelect(Class<T> entityAndResultType);
+    <T> Select<T> getDaoForSelect(Class<T> resultType);
     
     /**
      * @deprecated

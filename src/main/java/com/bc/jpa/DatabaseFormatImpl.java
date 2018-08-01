@@ -114,7 +114,7 @@ public class DatabaseFormatImpl implements DatabaseFormat {
 
                     if(LOG.isLoggable(Level.FINER)) {
                         LOG.log(Level.FINER, "Spent:: memory: {0}, time: {1}, converting: {2} to SQL value: {3}", 
-                                new Object[]{mb4-com.bc.util.Util.usedMemory(mb4), System.currentTimeMillis()-tb4, value, sqlObj});
+                                new Object[]{com.bc.util.Util.usedMemory(mb4), System.currentTimeMillis()-tb4, value, sqlObj});
                     }
                 }
                 
@@ -131,7 +131,7 @@ public class DatabaseFormatImpl implements DatabaseFormat {
                         if(LOG.isLoggable(Level.FINER)) {
                             LOG.log(Level.FINER, "Spent:: memory: {0}, time: {1}, converting: {2} to SQL value: {3} of type: {4}", 
                                     new Object[]{
-                                        mb4-com.bc.util.Util.usedMemory(mb4), 
+                                        com.bc.util.Util.usedMemory(mb4), 
                                         System.currentTimeMillis()-tb4, 
                                         value, 
                                         sqlObj, 
