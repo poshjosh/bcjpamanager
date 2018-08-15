@@ -65,7 +65,7 @@ public class EntityManagerFactoryCreatorImpl
         final Properties properties = this.propertiesProvider.apply(persistenceUnit);
         
         LOG.info(() -> "--------------------------------------------------\nCreating EntityManagerFactory for persistence unit: "
-                +persistenceUnit+"\nProperties: "+properties.stringPropertyNames());
+                +persistenceUnit+"\nProperties: "+(properties==null?null:properties.stringPropertyNames()));
 
         final ContextClassLoaderAccessor accessor = new ContextClassLoaderAccessor();
 

@@ -40,13 +40,15 @@ import java.util.logging.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import com.bc.jpa.EntityMemberAccess;
+import com.bc.jpa.metadata.EntityMetaDataAccess;
+import com.bc.jpa.metadata.EntityMetaDataAccessImpl;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Oct 28, 2017 12:21:14 PM
  */
 public class PersistenceUnitContextImpl implements PersistenceUnitContext, Serializable {
 
-    private transient static final Logger logger = Logger.getLogger(PersistenceUnitContextImpl.class.getName());
+    private transient static final Logger LOG = Logger.getLogger(PersistenceUnitContextImpl.class.getName());
 
     private final PersistenceContext persistenceContext;
     
@@ -180,6 +182,11 @@ public class PersistenceUnitContextImpl implements PersistenceUnitContext, Seria
         return persistenceContext;
     }
 
+    @Override
+    public EntityMetaDataAccess getMetaDataAccess() {
+        return new EntityMetaDataAccessImpl(this.persistenceContext, this.getMetaData(true));
+    }
+    
     @Override
     public final PersistenceUnitMetaData getMetaData(boolean loadIfNotLoaded) {
         if(!this.metaData.isBuilt() && loadIfNotLoaded) {

@@ -27,6 +27,7 @@ import java.util.function.Function;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import com.bc.jpa.EntityMemberAccess;
+import com.bc.jpa.metadata.EntityMetaDataAccess;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Oct 28, 2017 10:52:41 AM
@@ -86,6 +87,8 @@ public interface PersistenceContext extends AutoCloseable, Function<String, Enti
         metaData.build(this);
         return metaData;
     }
+    
+    EntityMetaDataAccess getMetaDataAccess(String persistenceUnitName);
     
     default PersistenceMetaData getMetaData() {
         return this.getMetaData(true);

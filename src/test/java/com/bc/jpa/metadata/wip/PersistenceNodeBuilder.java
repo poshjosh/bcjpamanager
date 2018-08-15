@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.bc.jpa.metadata;
+package com.bc.jpa.metadata.wip;
 
 import com.bc.node.Node;
 import java.sql.SQLException;
@@ -24,20 +24,6 @@ import java.sql.SQLException;
  */
 public interface PersistenceNodeBuilder {
     
-    int NODE_LEVEL_PERSISTENCE = 0;
-    int NODE_LEVEL_PERSISTENCE_UNIT = 1;
-    int NODE_LEVEL_CATALOG = 2;
-    int NODE_LEVEL_SCHEMA = 3;
-    int NODE_LEVEL_TABLE = 4;
-    int NODE_LEVEL_COLUMN = 5;
-    
-    String NODE_NAME_PERSISTENCE = "persistence";
-    String NODE_NAME_PERSISTENCE_UNIT = "persistence-unit";
-    String NODE_NAME_CATALOG = "catalog";
-    String NODE_NAME_SCHEMA = "schema";
-    String NODE_NAME_TABLE = "table";
-    String NODE_NAME_COLUMN = "column";
-
     default Node<String> build() throws SQLException {
         return this.build(null);
     }

@@ -29,9 +29,6 @@ import com.bc.sql.SQLDateTimePatterns;
 import java.io.Serializable;
 import java.net.URI;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Function;
@@ -40,14 +37,18 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import com.bc.jpa.EntityMemberAccess;
 import com.bc.jpa.functions.GetPersistenceUriForEntityClasses;
+import com.bc.jpa.metadata.EntityMetaDataAccess;
+import com.bc.jpa.metadata.EntityMetaDataAccessImpl;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Oct 27, 2017 10:30:01 PM
  */
 public class PersistenceContextImpl implements PersistenceContext, Serializable {
 
-    private transient final Map<String, PersistenceUnitContext> persistenceUnitContexts = new HashMap<>();
+    private transient final List<PersistenceUnitContext> persistenceUnitContextList = new ArrayList();
     
     private final PersistenceMetaData metaData;
     
@@ -105,7 +106,7 @@ public class PersistenceContextImpl implements PersistenceContext, Serializable 
         
         this.dateTimePatterns = Objects.requireNonNull(dateTimePatterns);
     }
-
+    
     @Override
     public boolean isOpen() {
         return !closed;
@@ -117,8 +118,7 @@ public class PersistenceContextImpl implements PersistenceContext, Serializable 
             return;
         }
         closed = true;
-        Collection<PersistenceUnitContext> puContexts = persistenceUnitContexts.values();
-        for(PersistenceUnitContext puContext : puContexts) {
+        for(PersistenceUnitContext puContext : this.persistenceUnitContextList) {
             if(puContext.isOpen()) {
                 puContext.close();
             }
@@ -206,17 +206,26 @@ public class PersistenceContextImpl implements PersistenceContext, Serializable 
 
     public PersistenceUnitContext getContext(String persistenceUnit, boolean createIfNone) {
 
-        PersistenceUnitContext puContext = persistenceUnitContexts.get(persistenceUnit);
+        PersistenceUnitContext puContext = getCached(persistenceUnit, null);
         
         if(puContext == null && createIfNone) {
             
             puContext = this.createPersistenceUnitContext(
                     persistenceUnit, emfCreator, dateTimePatterns);
 
-            persistenceUnitContexts.put(persistenceUnit, puContext);
+            persistenceUnitContextList.add(puContext);
         }
 
         return puContext;
+    }
+    
+    public PersistenceUnitContext getCached(String persistenceUnit, PersistenceUnitContext outputIfNone) {
+        for(PersistenceUnitContext puContext : this.persistenceUnitContextList) {
+            if(puContext.getName().equals(persistenceUnit)) {
+                return puContext;
+            }
+        }
+        return outputIfNone;
     }
     
     public PersistenceUnitContext createPersistenceUnitContext(
@@ -235,6 +244,11 @@ public class PersistenceContextImpl implements PersistenceContext, Serializable 
         return this.metaData.getURI();
     }
     
+    @Override
+    public EntityMetaDataAccess getMetaDataAccess(String persistenceUnitName) {
+        return new EntityMetaDataAccessImpl(this, this.getMetaData(true).getMetaData(persistenceUnitName));
+    }
+
     @Override
     public PersistenceMetaData getMetaData(boolean loadIfNotLoaded) {
         if(!this.metaData.isBuilt() && loadIfNotLoaded) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 NUROX Ltd.
+ * Copyright 2018 NUROX Ltd.
  *
  * Licensed under the NUROX Ltd Software License (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,27 @@ import com.bc.node.Node;
 import java.util.Optional;
 
 /**
- * @author Chinomso Bassey Ikwuagwu on Oct 27, 2017 11:01:57 PM
+ * @author Chinomso Bassey Ikwuagwu on Aug 9, 2018 10:37:31 PM
  */
-public interface NodeSearch {
+public interface PersistenceUnitNode extends Node<String> {
+
+    Node<String> findFirstTableNodeOrException(Class entityClass);
 
     Optional<Node<String>> findFirstNode(Node<String> offset, int nodeLevel, String nodeValue);
 
     Node<String> findFirstNodeOrException(Node<String> offset, int nodeLevel, String nodeValue);
+    
+    String getCatalogName(Class entityClass);
 
+    int getColumnIndex(Class entityClass, String column);
+
+    String[] getColumnNames(Class entityClass);
+
+    String getSchemaName(Class entityClass);
+
+    String getTableName(Class entityClass);
+
+    boolean isAnyTableExisting();
+
+    boolean isExisting(String database, String schema, String table);
 }

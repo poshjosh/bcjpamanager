@@ -16,11 +16,6 @@
 
 package com.bc.jpa.metadata;
 
-import static com.bc.jpa.metadata.PersistenceNodeBuilder.NODE_NAME_CATALOG;
-import static com.bc.jpa.metadata.PersistenceNodeBuilder.NODE_NAME_COLUMN;
-import static com.bc.jpa.metadata.PersistenceNodeBuilder.NODE_NAME_PERSISTENCE_UNIT;
-import static com.bc.jpa.metadata.PersistenceNodeBuilder.NODE_NAME_SCHEMA;
-import static com.bc.jpa.metadata.PersistenceNodeBuilder.NODE_NAME_TABLE;
 import com.bc.node.Node;
 import com.bc.node.NodeFormat;
 import java.io.Serializable;
@@ -40,7 +35,7 @@ import javax.persistence.EntityManagerFactory;
 public class PersistenceUnitNodeBuilderImpl 
         implements PersistenceUnitNodeBuilder, Serializable {
 
-    private static final Logger logger = Logger.getLogger(PersistenceUnitNodeBuilderImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(PersistenceUnitNodeBuilderImpl.class.getName());
     
     private final MetaDataAccess metaDataSource;
     
@@ -59,29 +54,35 @@ public class PersistenceUnitNodeBuilderImpl
     }
     
     @Override
-    public Node<String> build(String persistenceUnitName) throws SQLException {
+    public PersistenceUnitNode build(String persistenceUnitName) throws SQLException {
         
         this.ensureBuildNotAttempted();
         
-        final Node<String> puNode = Node.of(NODE_NAME_PERSISTENCE_UNIT, persistenceUnitName, parent);
+        final boolean caseInsensitiveNames = true;
+        
+        final PersistenceUnitNode puNode = new PersistenceUnitNodeImpl(
+                PersistenceNode.persistence_unit.getTagName(), 
+                persistenceUnitName, 
+                parent, 
+                caseInsensitiveNames);
 
         final Set<String> catalogNames = this.getCatalogNames(persistenceUnitName);
 
-        logger.fine(() -> "Persisence unit: " +persistenceUnitName + ", catalogs: " + catalogNames);
+        LOG.fine(() -> "Persisence unit: " +persistenceUnitName + ", catalogs: " + catalogNames);
 
         for(String catalogName : catalogNames) {
 
-            final Node<String> catalogNode = Node.of(NODE_NAME_CATALOG, catalogName, puNode);
+            final Node<String> catalogNode = Node.of(PersistenceNode.catalog.getTagName(), catalogName, puNode);
 
             final String catalogSearch = catalogNode.getValueOrDefault(null);
 
             final Set<String> schemaNames = this.getSchemaNames(persistenceUnitName, catalogSearch);
 
-            logger.fine(() -> "Catalog: " +catalogName + ", schemas: " + schemaNames);
+            LOG.fine(() -> "Catalog: " +catalogName + ", schemas: " + schemaNames);
 
             for(String schemaName : schemaNames) {
 
-                final Node<String> schemaNode = Node.of(NODE_NAME_SCHEMA, schemaName, catalogNode);
+                final Node<String> schemaNode = Node.of(PersistenceNode.schema.getTagName(), schemaName, catalogNode);
 
                 final String schemaSearch = schemaNode.getValueOrDefault(null);
 
@@ -90,28 +91,28 @@ public class PersistenceUnitNodeBuilderImpl
                         catalogSearch, schemaSearch, null, null, MetaDataAccess.TABLE_NAME)
                 );
 
-                logger.fine(() -> "Schema: " +schemaName + ", tables: " + tableNames);
+                LOG.fine(() -> "Schema: " +schemaName + ", tables: " + tableNames);
 
                 for(String tableName : tableNames) {
 
-                    final Node<String> tableNode = Node.of(NODE_NAME_TABLE, tableName, schemaNode);
+                    final Node<String> tableNode = Node.of(PersistenceNode.table.getTagName(), tableName, schemaNode);
 
                     final Set<String> columnNames = new LinkedHashSet(
                             this.metaDataSource.fetchStringMetaData(
                             persistenceUnitName, catalogSearch, schemaSearch, tableName, null, MetaDataAccess.COLUMN_NAME)
                     );
 
-                    logger.finer(() -> "Table: " +tableName + ", columns: " + columnNames);
+                    LOG.finer(() -> "Table: " +tableName + ", columns: " + columnNames);
 
                     for(String columnName : columnNames) {
 
-                        Node.of(NODE_NAME_COLUMN, columnName, tableNode);
+                        Node.of(PersistenceNode.column.getTagName(), columnName, tableNode);
                     }
                 }
             }
         }
         
-        logger.finer(() -> new NodeFormat().format(puNode));
+        LOG.finer(() -> new NodeFormat().format(puNode));
         
         return puNode;
     }

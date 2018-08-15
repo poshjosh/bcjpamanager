@@ -7,8 +7,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import com.bc.jpa.dao.Dao;
 import com.bc.jpa.dao.Select;
-import com.bc.jpa.dao.Update;
-import com.bc.jpa.dao.Delete;
 
 /**
  * @(#)ControllerFactory.java   20-Mar-2014 18:09:39
@@ -27,69 +25,72 @@ import com.bc.jpa.dao.Delete;
 public interface JpaContext extends PersistenceContext, PersistenceUnitContext {
     
     /**
+     * @param entityClass
+     * @return 
      * @deprecated
      */        
     @Deprecated
     EntityManagerFactory getEntityManagerFactory(Class entityClass);
     
     /**
+     * @param entityType
+     * @return 
      * @deprecated
      */        
     @Deprecated
     Dao getDao(Class entityType);
     
     /**
-     * @deprecated
-     */        
-    @Deprecated
-    <T> Select<T> getDaoForSelect(Class<T> resultType);
-    
-    /**
+     * @param <T>
+     * @param entityType
+     * @param resultType
+     * @return 
      * @deprecated
      */        
     @Deprecated
     <T> Select<T> getDaoForSelect(Class entityType, Class<T> resultType);
     
     /**
-     * @deprecated
-     */        
-    @Deprecated
-    <T> Delete<T> getDaoForDelete(Class<T> entityType);
-
-    /**
-     * @deprecated
-     */        
-    @Deprecated
-    <T> Update<T> getDaoForUpdate(Class<T> entityType);
-    
-    /**
+     * @param catalog
+     * @param schema
+     * @param table
+     * @return 
      * @deprecated
      */        
     @Deprecated
     EntityController getEntityController(String catalog, String schema, String table);
     
     /**
+     * @param <E>
+     * @param entityClass
+     * @return 
      * @deprecated
      */        
     @Deprecated
     <E> EntityController<E, Object> getEntityController(Class<E> entityClass);
 
     /**
+     * @param <E>
+     * @param <e>
+     * @param entityClass
+     * @param idClass
+     * @return 
      * @deprecated
      */        
     @Deprecated
     <E, e> EntityController<E, e> getEntityController(Class<E> entityClass, Class<e> idClass);
     
     /**
+     * @param entityClass
+     * @return 
      * @deprecated
      */        
     @Deprecated
     EntityManager getEntityManager(Class entityClass);
     
     /**
-     * @deprecated
+     * @return 
      */        
-    @Deprecated
     @Override
     default boolean isMetaDataLoaded() {
         return this.getMetaData(false).isBuilt();
@@ -103,6 +104,7 @@ public interface JpaContext extends PersistenceContext, PersistenceUnitContext {
     JpaMetaData loadMetaData();
     
     /**
+     * @return 
      * @deprecated
      */        
     @Deprecated
@@ -112,6 +114,8 @@ public interface JpaContext extends PersistenceContext, PersistenceUnitContext {
     }
     
     /**
+     * @param loadIfNotLoaded
+     * @return 
      * @deprecated
      */        
     @Deprecated
@@ -119,6 +123,7 @@ public interface JpaContext extends PersistenceContext, PersistenceUnitContext {
     JpaMetaData getMetaData(boolean loadIfNotLoaded);
 
     /**
+     * @return 
      * @deprecated
      */        
     @Deprecated

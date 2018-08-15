@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -36,17 +35,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.persistence.EntityManagerFactory;
 import com.bc.xml.PersistenceXmlDom;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Oct 27, 2017 7:59:42 PM
  */
 public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializable {
 
-    private static final Logger logger = Logger.getLogger(PersistenceMetaDataImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(PersistenceMetaDataImpl.class.getName());
     
     private final URI persistenceConfigURI;
     
-    private final Map<String, PersistenceUnitMetaData> persistenceUnitMetaData;
+    private final List<PersistenceUnitMetaData> unitMetaDataList;
     
     private final Node<String> node;
     
@@ -58,7 +59,7 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
         
         final List<String> puNames = pudom.getPersistenceUnitNames();
         
-        final Map<String, PersistenceUnitMetaData> puMetas = new LinkedHashMap<>(puNames.size(), 1.0f);
+        final List<PersistenceUnitMetaData> puMetas = new ArrayList<>(puNames.size());
         
         for(String puName : puNames) {
 
@@ -77,21 +78,22 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
                 }
             }
             
-            puMetas.put(puName, new PersistenceUnitMetaDataImpl(puName, puClasses));
+            puMetas.add(new PersistenceUnitMetaDataImpl(puName, puClasses));
         }
         
-        this.persistenceUnitMetaData = Collections.unmodifiableMap(puMetas);
+        this.unitMetaDataList = puMetas.size() == 1 ? 
+                Collections.singletonList(puMetas.get(0)) :
+                Collections.unmodifiableList(puMetas);
         
-        this.node = Node.of(PersistenceNodeBuilder.NODE_NAME_PERSISTENCE, null, null);
+        this.node = Node.of(PersistenceNode.persistence.getTagName(), null, null);
         
-        logger.log(Level.FINE, "{0}", this.persistenceUnitMetaData);
+        LOG.log(Level.FINE, "{0}", this.unitMetaDataList);
     }
     
     @Override
     public boolean isBuilt() {
         boolean built = true;
-        final Collection<PersistenceUnitMetaData> puMetas = this.persistenceUnitMetaData.values();
-        for(PersistenceUnitMetaData puMeta : puMetas) {
+        for(PersistenceUnitMetaData puMeta : this.unitMetaDataList) {
             if(!puMeta.isBuilt()) {
                 built = false;
                 break;
@@ -108,8 +110,7 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
      */
     @Override
     public Node<String> build(Function<String, EntityManagerFactory> emfProvider) throws SQLException{
-        final Collection<PersistenceUnitMetaData> puMetas = this.persistenceUnitMetaData.values();
-        for(PersistenceUnitMetaData puMeta : puMetas) {
+        for(PersistenceUnitMetaData puMeta : this.unitMetaDataList) {
             puMeta.build(node, emfProvider);
         }
         return this.node;
@@ -123,7 +124,12 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
     
     @Override
     public PersistenceUnitMetaData getMetaData(String persistenceUnit) {
-        return this.persistenceUnitMetaData.get(persistenceUnit);
+        for(PersistenceUnitMetaData puMetaData : this.unitMetaDataList) {
+            if(puMetaData.getName().equals(persistenceUnit)) {
+                return puMetaData;
+            }
+        }
+        return null;
     }
     
     @Override
@@ -141,8 +147,8 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
     public Map<String, Set<Class>> getPersistenceUnitClasses(String... persistenceUnitNames) {
         final Map<String, Set<Class>> output = new LinkedHashMap<>();
         for(String puName : persistenceUnitNames) {
-            final Set<Class> puClasses = this.persistenceUnitMetaData.get(puName).getEntityClasses();
-            output.put(puName, puClasses);
+            final Collection<Class> puClasses = this.getMetaData(puName).getEntityClasses();
+            output.put(puName, this.toSet(puClasses));
         }
         return Collections.unmodifiableMap(output);
     }
@@ -169,7 +175,11 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
     
     @Override
     public Set<String> getPersistenceUnitNames() {
-        return Collections.unmodifiableSet(this.persistenceUnitMetaData.keySet());
+        final Set<String> output = new LinkedHashSet(this.unitMetaDataList.size());
+        for(PersistenceUnitMetaData metaData : this.unitMetaDataList) {
+            output.add(metaData.getName());
+        }
+        return Collections.unmodifiableSet(output);
     }
     
     @Override
@@ -179,7 +189,7 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
         
         for(String puName : persistenceUnitNames) {
             
-            entityClasses.addAll(persistenceUnitMetaData.get(puName).getEntityClasses());
+            entityClasses.addAll(getMetaData(puName).getEntityClasses());
         }
         
         return Collections.unmodifiableSet(entityClasses);
@@ -188,9 +198,9 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
     @Override
     public Set<Class> getEntityClasses(String persistenceUnitName) {
         
-        final Set<Class> puClasses = persistenceUnitMetaData.get(persistenceUnitName).getEntityClasses();
+        final Collection<Class> puClasses = getMetaData(persistenceUnitName).getEntityClasses();
         
-        return Collections.unmodifiableSet(puClasses);
+        return Collections.unmodifiableSet(this.toSet(puClasses));
     }
 
     @Override
@@ -203,10 +213,6 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
         return this.getMetaData(persistenceUnit).isAnyTableExisting();
     }
     
-    public NodeSearch getNodeSearch() {
-        return new NodeSearchImpl();
-    }
-    
     @Override
     public Node<String> getNode() {
         return this.node;
@@ -214,11 +220,14 @@ public class PersistenceMetaDataImpl implements PersistenceMetaData, Serializabl
 
     @Override
     public Map<String, Set<Class>> getPersistenceUnitClasses() {
-        final Map<String, Set<Class>> output = new LinkedHashMap(this.persistenceUnitMetaData.size(), 1.0f);
-        final Set<String> puNames = this.persistenceUnitMetaData.keySet();
-        for(String puName : puNames) {
-            output.put(puName, this.persistenceUnitMetaData.get(puName).getEntityClasses());
+        final Map<String, Set<Class>> output = new LinkedHashMap(this.unitMetaDataList.size(), 1.0f);
+        for(PersistenceUnitMetaData metaData : this.unitMetaDataList) {
+            output.put(metaData.getName(), this.toSet(metaData.getEntityClasses()));
         }
         return Collections.unmodifiableMap(output);
+    }
+    
+    private Set<Class> toSet(Collection<Class> classes) {
+        return classes instanceof Set ? (Set)classes : new LinkedHashSet(classes);
     }
 }

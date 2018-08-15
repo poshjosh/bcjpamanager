@@ -16,7 +16,6 @@
 
 package com.bc.jpa.metadata;
 
-import com.bc.node.Node;
 import java.sql.SQLException;
 
 /**
@@ -24,5 +23,5 @@ import java.sql.SQLException;
  */
 public interface PersistenceUnitNodeBuilder {
 
-    Node<String> build(String persistenceUnitName) throws SQLException;
+    PersistenceUnitNode build(String persistenceUnitName) throws SQLException;
 }

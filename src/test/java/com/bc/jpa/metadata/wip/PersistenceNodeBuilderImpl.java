@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package com.bc.jpa.metadata;
+package com.bc.jpa.metadata.wip;
 
+import com.bc.jpa.metadata.MetaDataAccess;
+import com.bc.jpa.metadata.MetaDataAccessImpl;
+import com.bc.jpa.metadata.PersistenceNode;
+import com.bc.jpa.metadata.PersistenceUnitNodeBuilderImpl;
 import com.bc.node.Node;
 import com.bc.node.NodeFormat;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,21 +38,21 @@ import javax.persistence.EntityManagerFactory;
  */
 public class PersistenceNodeBuilderImpl implements PersistenceNodeBuilder {
 
-    private static final Logger logger = Logger.getLogger(PersistenceNodeBuilderImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(PersistenceNodeBuilderImpl.class.getName());
     
     private final MetaDataAccess metaDataSource;
     
-    private final Set<String> persistenceUnitNames;
+    private final Collection<String> persistenceUnitNames;
     
     private boolean buildAttempted;
 
     public PersistenceNodeBuilderImpl(
             Function<String, EntityManagerFactory> emfProvider,
-            Set<String> persistenceUnitNames){
+            Collection<String> persistenceUnitNames){
         this(new MetaDataAccessImpl(emfProvider), persistenceUnitNames);
     }
 
-    public PersistenceNodeBuilderImpl(MetaDataAccess metaDataSource, Set<String> persistenceUnitNames) {
+    public PersistenceNodeBuilderImpl(MetaDataAccess metaDataSource, Collection<String> persistenceUnitNames) {
         this.metaDataSource = Objects.requireNonNull(metaDataSource);
         this.persistenceUnitNames = Objects.requireNonNull(persistenceUnitNames);
     }
@@ -57,14 +62,14 @@ public class PersistenceNodeBuilderImpl implements PersistenceNodeBuilder {
         
         this.ensureBuildNotAttempted();
         
-        final Node<String> persistenceNode = Node.of(NODE_NAME_PERSISTENCE, rootNodeValue, null);
+        final Node<String> persistenceNode = Node.of(PersistenceNode.persistence.getTagName(), rootNodeValue, null);
         
         for(String puName : this.persistenceUnitNames) {
             
             new PersistenceUnitNodeBuilderImpl(persistenceNode, this.metaDataSource).build(puName);
         }
         
-        logger.finer(() -> new NodeFormat().format(persistenceNode));
+        LOG.finer(() -> new NodeFormat().format(persistenceNode));
         
         return persistenceNode;
     }
@@ -72,25 +77,25 @@ public class PersistenceNodeBuilderImpl implements PersistenceNodeBuilder {
     @Override
     public Node<String> buildUnit(String puName, Node<String> parent) throws SQLException {
         
-        final Node<String> puNode = Node.of(NODE_NAME_PERSISTENCE_UNIT, puName, parent);
+        final Node<String> puNode = Node.of(PersistenceNode.persistence_unit.getTagName(), puName, parent);
 
         final Set<String> catalogNames = this.getCatalogNames(puName);
 
-        logger.fine(() -> "Persisence unit: " +puName + ", catalogs: " + catalogNames);
+        LOG.fine(() -> "Persisence unit: " +puName + ", catalogs: " + catalogNames);
 
         for(String catalogName : catalogNames) {
 
-            final Node<String> catalogNode = Node.of(NODE_NAME_CATALOG, catalogName, puNode);
+            final Node<String> catalogNode = Node.of(PersistenceNode.catalog.getTagName(), catalogName, puNode);
 
             final String catalogSearch = catalogNode.getValueOrDefault(null);
 
             final Set<String> schemaNames = this.getSchemaNames(puName, catalogSearch);
 
-            logger.fine(() -> "Catalog: " +catalogName + ", schemas: " + schemaNames);
+            LOG.fine(() -> "Catalog: " +catalogName + ", schemas: " + schemaNames);
 
             for(String schemaName : schemaNames) {
 
-                final Node<String> schemaNode = Node.of(NODE_NAME_SCHEMA, schemaName, catalogNode);
+                final Node<String> schemaNode = Node.of(PersistenceNode.schema.getTagName(), schemaName, catalogNode);
 
                 final String schemaSearch = schemaNode.getValueOrDefault(null);
 
@@ -99,22 +104,22 @@ public class PersistenceNodeBuilderImpl implements PersistenceNodeBuilder {
                         catalogSearch, schemaSearch, null, null, MetaDataAccess.TABLE_NAME)
                 );
 
-                logger.fine(() -> "Schema: " +schemaName + ", tables: " + tableNames);
+                LOG.fine(() -> "Schema: " +schemaName + ", tables: " + tableNames);
 
                 for(String tableName : tableNames) {
 
-                    final Node<String> tableNode = Node.of(NODE_NAME_TABLE, tableName, schemaNode);
+                    final Node<String> tableNode = Node.of(PersistenceNode.table.getTagName(), tableName, schemaNode);
 
                     final Set<String> columnNames = new LinkedHashSet(
                             this.metaDataSource.fetchStringMetaData(
                             puName, catalogSearch, schemaSearch, tableName, null, MetaDataAccess.COLUMN_NAME)
                     );
 
-                    logger.finer(() -> "Table: " +tableName + ", columns: " + columnNames);
+                    LOG.finer(() -> "Table: " +tableName + ", columns: " + columnNames);
 
                     for(String columnName : columnNames) {
 
-                        Node.of(NODE_NAME_COLUMN, columnName, tableNode);
+                        Node.of(PersistenceNode.column.getTagName(), columnName, tableNode);
                     }
                 }
             }

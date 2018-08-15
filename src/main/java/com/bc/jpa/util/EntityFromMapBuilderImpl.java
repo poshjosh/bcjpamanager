@@ -76,7 +76,7 @@ public class EntityFromMapBuilderImpl implements EntityFromMapBuilder {
         this.resultHandler = ResultHandler.NO_OP;
     }
     
-    public EntityMemberAccess getEntityUpdater(Class entityType) {
+    public EntityMemberAccess getEntityMemberAccess(Class entityType) {
         for(String puName : puNames) {
             if(this.jpaContext.getMetaData().getMetaData(puName).getEntityClasses().contains(entityType)) {
                 return this.jpaContext.getContext(puName).getEntityMemberAccess(entityType);
@@ -113,7 +113,7 @@ public class EntityFromMapBuilderImpl implements EntityFromMapBuilder {
         
         final Set keys = src.keySet();
        
-        final EntityMemberAccess updater = this.getEntityUpdater(tgt.getClass());
+        final EntityMemberAccess updater = this.getEntityMemberAccess(tgt.getClass());
         
         final ReflectionUtil reflection = new ReflectionUtil();
         

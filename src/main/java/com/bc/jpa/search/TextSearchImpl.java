@@ -76,7 +76,7 @@ public class TextSearchImpl implements TextSearch, Serializable {
         
         final List<T> foundList;
         
-        try(final Select<T> dao = this.persistenceUnitContext.getDao().forSelect(entityType)) {
+        try(final Select<T> dao = this.persistenceUnitContext.getDaoForSelect(entityType)) {
 
             final Collection<String> columnsToSearch = 
                     new GetColumnNamesOfType(this.persistenceUnitContext).apply(entityType, String.class);
@@ -115,7 +115,7 @@ public class TextSearchImpl implements TextSearch, Serializable {
         
         final List<T> foundList;
         
-        try(final Select<T> dao = this.persistenceUnitContext.getDao().forSelect(entityType)) {
+        try(final Select<T> dao = this.persistenceUnitContext.getDaoForSelect(entityType)) {
 
             final Collection<String> columnsToSearch = 
                     new GetColumnNamesOfType(this.persistenceUnitContext).apply(entityType, String.class);

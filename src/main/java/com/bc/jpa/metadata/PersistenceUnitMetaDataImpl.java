@@ -16,25 +16,25 @@
 
 package com.bc.jpa.metadata;
 
+import com.bc.jpa.functions.GetTableNameFromAnnotation;
 import com.bc.node.Node;
 import com.bc.node.NodeFormat;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.persistence.Column;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Id;
-import javax.persistence.Table;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Oct 27, 2017 10:42:32 PM
@@ -46,21 +46,21 @@ public class PersistenceUnitMetaDataImpl implements PersistenceUnitMetaData, Ser
 
     private final String persistenceUnit;
     
-    private final Set<Class> persistenceUnitClasses;
+    private final List<Class> persistenceUnitClasses;
     
     private boolean built;
     
-    private Node<String> node;
+    private PersistenceUnitNode puNode;
     
-    private Map<Class, int[]> columnDisplaySizes;
+    private List<int[]> columnDisplaySizes;
     
-    private Map<Class, int[]> columnNullables;
+    private List<int[]> columnNullables;
     
-    private Map<Class, int[]> columnDataTypes;
+    private List<int[]> columnDataTypes;
 
-    public PersistenceUnitMetaDataImpl(String persistenceUnit, Set<Class> puClasses) {
+    public PersistenceUnitMetaDataImpl(String persistenceUnit, Collection<Class> puClasses) {
         this.persistenceUnit = Objects.requireNonNull(persistenceUnit);
-        this.persistenceUnitClasses = Collections.unmodifiableSet(puClasses);
+        this.persistenceUnitClasses = Collections.unmodifiableList(new ArrayList(puClasses));
     }
     
     @Override
@@ -77,19 +77,20 @@ public class PersistenceUnitMetaDataImpl implements PersistenceUnitMetaData, Ser
      * @throws SQLException 
      */
     @Override
-    public Node<String> build(Node<String> persistenceNode, Function<String, EntityManagerFactory> emfProvider) throws SQLException{
+    public PersistenceUnitNode build(Node<String> persistenceNode, Function<String, EntityManagerFactory> emfProvider) throws SQLException{
 
         final MetaDataAccess metaDataAccess = new MetaDataAccessImpl(emfProvider);
         
-        this.node = new PersistenceUnitNodeBuilderImpl(persistenceNode, metaDataAccess).build(persistenceUnit);
+        this.puNode = new PersistenceUnitNodeBuilderImpl(
+                persistenceNode, metaDataAccess).build(persistenceUnit);
 
-        LOG.finer(() -> new NodeFormat().format(node));
+        LOG.finer(() -> new NodeFormat().format(this.puNode));
         
-        this.columnDisplaySizes = new LinkedHashMap();
-        this.columnNullables = new LinkedHashMap();
-        this.columnDataTypes = new LinkedHashMap();
+        this.columnDisplaySizes = new ArrayList(this.persistenceUnitClasses.size());
+        this.columnNullables = new ArrayList(this.persistenceUnitClasses.size());
+        this.columnDataTypes = new ArrayList(this.persistenceUnitClasses.size());
         
-        LOG.finer(() -> "Persistence unit name: " + persistenceUnit + ", node: " + this.node);
+        LOG.finer(() -> "Persistence unit name: " + persistenceUnit + ", node: " + this.puNode);
         
         for(Class puClass : this.persistenceUnitClasses) {
             
@@ -97,64 +98,45 @@ public class PersistenceUnitMetaDataImpl implements PersistenceUnitMetaData, Ser
             
             LOG.fine(() -> "Type: " + puClass.getName() + ", Table: " + tableName);
             
-            this.columnDisplaySizes.put(puClass, 
-                    metaDataAccess.fetchColumnDisplaySizes(persistenceUnit, tableName));
-            this.columnNullables.put(puClass, 
-                    metaDataAccess.fetchColumnNullables(persistenceUnit, tableName));
-            this.columnDataTypes.put(puClass, 
-                    metaDataAccess.fetchColumnDataTypes(persistenceUnit, tableName));
+            this.columnDisplaySizes.add(metaDataAccess.fetchColumnDisplaySizes(persistenceUnit, tableName));
+            this.columnNullables.add(metaDataAccess.fetchColumnNullables(persistenceUnit, tableName));
+            this.columnDataTypes.add(metaDataAccess.fetchColumnDataTypes(persistenceUnit, tableName));
         }
         
         this.built = true;
         
-        return this.node;
+        return this.puNode;
     }
 
     @Override
-    public Node<String> getNode() {
-        return node;
-    }
-
-    @Override
-    public Set<Class> getEntityClasses() {
+    public Collection<Class> getEntityClasses() {
         return this.persistenceUnitClasses;
     }
 
     @Override
     public int [] getColumnDisplaySizes(Class entityClass) {
-        return columnDisplaySizes.get(entityClass);
+        return this.get(columnDisplaySizes, entityClass);
     }
 
     @Override
     public int [] getColumnNullables(Class entityClass) {
-        return columnNullables.get(entityClass);
+        return this.get(columnNullables, entityClass);
     }
 
     @Override
     public Class getColumnClass(Class entityClass, int columnIndex) {
-        final int [] dataTypes = this.columnDataTypes.get(entityClass);
+        final int [] dataTypes = this.get(columnDataTypes, entityClass);
         final Class columnClass = com.bc.sql.SQLUtils.getClass(dataTypes[columnIndex], null);
         return Objects.requireNonNull(columnClass);
     }
 
     @Override
     public int [] getColumnDataTypes(Class entityClass) {
-        return columnDataTypes.get(entityClass);
-    }
-
-    @Override
-    public String getCatalogName(Class entityClass) {
-        final Node<String> tableNode = this.findFirstTableNodeOrException(entityClass);
-        final Node<String> schemaNode = Objects.requireNonNull(tableNode.getParentOrDefault(null));
-        final Node<String> catalogNode = Objects.requireNonNull(schemaNode.getParentOrDefault(null));
-        return catalogNode.getValueOrDefault(null);
+        return this.get(columnDataTypes, entityClass);
     }
     
-    @Override
-    public String getSchemaName(Class entityClass) {
-        final Node<String> tableNode = this.findFirstTableNodeOrException(entityClass);
-        final Node<String> schemaNode = Objects.requireNonNull(tableNode.getParentOrDefault(null));
-        return schemaNode.getValueOrDefault(null);
+    public int [] get(List<int[]> source, Class entityClass) {
+        return source.get(this.persistenceUnitClasses.indexOf(entityClass));
     }
 
     @Override
@@ -168,23 +150,26 @@ public class PersistenceUnitMetaDataImpl implements PersistenceUnitMetaData, Ser
     }
 
     @Override
+    public String getCatalogName(Class entityClass) {
+        return this.puNode.getCatalogName(entityClass);
+    }
+    
+    @Override
+    public String getSchemaName(Class entityClass) {
+        return this.puNode.getSchemaName(entityClass);
+    }
+
+    @Override
     public String getTableName(Class entityClass) {
-        final String tableName = this.getNodeSearch().findFirstNodeOrException(
-                this.node, PersistenceNodeBuilder.NODE_LEVEL_TABLE, 
-                this.getTableNameFromAnnotation(entityClass)).getValue().get();
-        LOG.finer(() -> "Entity class: "+entityClass+", table name: " + tableName);
-        return tableName;
+        return this.puNode.getTableName(entityClass);
     }
     
     @Override
     public Class getEntityClass(String database, String schema, String table) {
-        final Node<String> dbNode = this.getNodeSearch().findFirstNodeOrException(
-                node, PersistenceNodeBuilder.NODE_LEVEL_CATALOG, database);
-        dbNode.findFirstChild(schema, table).orElseThrow(
-                () -> new IllegalArgumentException(
-                        "Unexpected catalog.schema.table: " + database + '.' + schema + '.' + table
-                )
-        );
+        if(!this.puNode.isExisting(database, schema, table)) {
+            throw new IllegalArgumentException(
+                    "Unexpected catalog.schema.table: " + database + '.' + schema + '.' + table);
+        }
         Class entityClass = null;
         for(Class dbClass:persistenceUnitClasses) {
             if(this.getTableName(dbClass).equals(table)) {
@@ -200,15 +185,7 @@ public class PersistenceUnitMetaDataImpl implements PersistenceUnitMetaData, Ser
     
     @Override
     public int getColumnIndex(Class entityClass, String column) {
-        int columnIndex = -1;
-        final String [] columns = this.getColumnNames(entityClass);
-        for(int i=0; i<columns.length; i++) {
-            if(columns[i].equals(column)) {
-                columnIndex = i;
-                break;
-            }
-        }
-        return columnIndex;
+        return this.puNode.getColumnIndex(entityClass, column);
     }
 
     @Override
@@ -233,10 +210,7 @@ public class PersistenceUnitMetaDataImpl implements PersistenceUnitMetaData, Ser
     
     @Override
     public String [] getColumnNames(Class entityClass) {
-        final Node<String> tableNode = this.findFirstTableNodeOrException(entityClass);
-        final Function<Node<String>, String> nodeToNodeValue = (node) -> node.getValueOrDefault(null);
-        final List<String> columnNames = tableNode.getChildren().stream().map(nodeToNodeValue).collect(Collectors.toList());
-        return columnNames.isEmpty() ? new String[0] : columnNames.toArray(new String[0]);
+        return this.puNode.getColumnNames(entityClass);
     }
 
     /**
@@ -265,88 +239,136 @@ public class PersistenceUnitMetaDataImpl implements PersistenceUnitMetaData, Ser
         final List<String> tableNames = new MetaDataAccessImpl(emfProvider).fetchStringMetaData(
                 this.persistenceUnit, null, null, null, null, MetaDataAccess.TABLE_NAME);
         
-        final List<String> names = this.getEntityClasses().stream()
-                .map((cls) -> this.getTableNameFromAnnotation(cls))
+        final Function<Class, String> getTableName = new GetTableNameFromAnnotation();
+        
+        final List<String> existingListedTableNames = this.getEntityClasses().stream()
+                .map((cls) -> getTableName.apply(cls))
+                .filter((tableName) -> tableNames.contains(tableName))
                 .collect(Collectors.toList());
         
-        final List<String> output = new ArrayList(names.size());
-        
-        for(String name : names) {
-            
-            if(tableNames.contains(name)) {
-                
-                output.add(name);
-            }
-        }
-        
-        return output;
+        return existingListedTableNames;
     }
     
     @Override
     public boolean isAnyListedTableExisting() {
-        
         boolean output = false;
-        final Node<String> puNode = this.getNode();
-        if(puNode != null) {
-            final Set<Class> classes = this.getEntityClasses();
-            final NodeSearch nodeSearch = this.getNodeSearch();
+        if(this.puNode != null) {
+            final Collection<Class> classes = this.getEntityClasses();
+            final Function<Class, String> getTableName = new GetTableNameFromAnnotation();
             for(Class cls : classes) {
-                final String tableNameFromAnnotation = this.getTableNameFromAnnotation(cls);
+                final String tableNameFromAnnotation = getTableName.apply(cls);
                 Objects.requireNonNull(tableNameFromAnnotation);
-                if(nodeSearch.findFirstNode(puNode, 
-                        PersistenceNodeBuilder.NODE_LEVEL_TABLE, tableNameFromAnnotation).isPresent()) {
+                if(this.puNode.findFirstNode(this.puNode, 
+                        PersistenceNode.table.getLevel(), tableNameFromAnnotation).isPresent()) {
                     output = true;
                     break;
                 }
             }
         }
         return output;
+    }
+    
+    ////////////////////////////////////////////////////////////////////////////
+    //  Delegated methods
+    ////////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public boolean isAnyTableExisting() {
+        return this.puNode.isAnyTableExisting();
     }
     
     @Override
-    public boolean isAnyTableExisting() {
-        boolean output = false;
-        final Node<String> root = this.getNode();
-        final List<Node<String>> catalogNodes = root.getChildren();
-        for(Node<String> catalogNode : catalogNodes) {
-            final List<Node<String>> schemaNodes = catalogNode.getChildren();
-            for(Node<String> schemaNode : schemaNodes) {
-                if(!schemaNode.getChildren().isEmpty()) {
-                    output = true;
-                    break;
-                }
-            }
-        }
-        return output;
-    }
-    
     public Node<String> findFirstTableNodeOrException(Class entityClass) {
-        
-        final String tableNameFromAnnotation = this.getTableNameFromAnnotation(entityClass);
-        
-//System.out.println("\n@"+this.getClass()+", entity type: "+entityClass.getName()+"\nPersistence unit node: " + puNode);
-        final Node<String> tableNode = this.getNodeSearch().findFirstNodeOrException(node, 
-                PersistenceNodeBuilder.NODE_LEVEL_TABLE, tableNameFromAnnotation);
-        
-//System.out.println("Table node: " + tableNode + "\nPersistence unit of table: " +tableNode.getParentOrDefault(null).getParentOrDefault(null).getParentOrDefault(null).getValueOrDefault(null));
-        return tableNode;
+        return this.puNode.findFirstTableNodeOrException(entityClass);
     }
 
-    /**
-     * @param aClass The class whose table name is to be returned
-     * @return The table name as extracted from the supplied entity type's annotation
-     */
-    public String getTableNameFromAnnotation(Class aClass) {
-        Table table = (Table)aClass.getAnnotation(Table.class);
-        LOG.finer(() -> "Entity class: "+aClass.getName()+", table annotation: " + table);
-        return table.name();
-    }
-
-    public NodeSearch getNodeSearch() {
-        return this.getNodeSearch(true);
+    @Override
+    public boolean isExisting(String database, String schema, String table) {
+        return this.puNode.isExisting(database, schema, table);
     }
     
-    public NodeSearch getNodeSearch(boolean caseInsensitiveNames) {
-        return new NodeSearchImpl(caseInsensitiveNames);
+    @Override
+    public Optional<Node<String>> findFirstNode(Node<String> offset, int nodeLevel, String nodeValue) {
+        return puNode.findFirstNode(offset, nodeLevel, nodeValue);
+    }
+
+    @Override
+    public Node<String> findFirstNodeOrException(Node<String> offset, int nodeLevel, String nodeValue) {
+        return puNode.findFirstNodeOrException(offset, nodeLevel, nodeValue);
+    }
+
+    @Override
+    public boolean isRoot() {
+        return puNode.isRoot();
+    }
+
+    @Override
+    public boolean isLeaf() {
+        return puNode.isLeaf();
+    }
+
+    @Override
+    public int getLevel() {
+        return puNode.getLevel();
+    }
+
+    @Override
+    public Node<String> getRoot() {
+        return puNode.getRoot();
+    }
+
+    @Override
+    public Optional<Node<String>> findFirstChild(String... path) {
+        return puNode.findFirstChild(path);
+    }
+
+    @Override
+    public Optional<Node<String>> findFirst(Node<String> offset, String... path) {
+        return puNode.findFirst(offset, path);
+    }
+
+    @Override
+    public Optional<Node<String>> findFirstChild(Predicate<Node<String>> nodeTest) {
+        return puNode.findFirstChild(nodeTest);
+    }
+
+    @Override
+    public Optional<Node<String>> findFirst(Node<String> offset, Predicate<Node<String>> nodeTest) {
+        return puNode.findFirst(offset, nodeTest);
+    }
+
+    @Override
+    public boolean addChild(Node<String> child) {
+        return puNode.addChild(child);
+    }
+
+    @Override
+    public List<Node<String>> getChildren() {
+        return puNode.getChildren();
+    }
+
+    @Override
+    public String getName() {
+        return this.persistenceUnit;
+    }
+
+    @Override
+    public Optional<String> getValue() {
+        return puNode.getValue();
+    }
+
+    @Override
+    public String getValueOrDefault(String outpufIfNone) {
+        return puNode.getValueOrDefault(outpufIfNone);
+    }
+
+    @Override
+    public Optional<Node<String>> getParent() {
+        return puNode.getParent();
+    }
+
+    @Override
+    public Node<String> getParentOrDefault(Node<String> outputIfNone) {
+        return puNode.getParentOrDefault(outputIfNone);
     }
 }

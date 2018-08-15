@@ -99,7 +99,7 @@ System.out.println("Found: "+(found==null?null:found.size()));
                     .createQuery().getResultList();
 System.out.println("Found2: "+(found2==null?null:found2.size()));            
 
-            SelectDao<Long> selectLong = instance.selectInstance(Long.class);
+            SelectDao<Long> selectLong = createSelect(Long.class);
         
             Long count = selectLong.getCriteria()
                     .from(Product.class).count().createQuery().getSingleResult();

@@ -29,6 +29,10 @@ import java.util.function.Function;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import com.bc.jpa.EntityMemberAccess;
+import com.bc.jpa.dao.DeleteImpl;
+import com.bc.jpa.dao.SelectImpl;
+import com.bc.jpa.dao.UpdateImpl;
+import com.bc.jpa.metadata.EntityMetaDataAccess;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Oct 28, 2017 12:13:58 PM
@@ -53,15 +57,15 @@ public interface PersistenceUnitContext extends AutoCloseable {
     EntityManagerFactory removeEntityManagerFactory(boolean close);
     
     default <T> Select<T> getDaoForSelect(Class<T> resultType) {
-        return this.getDao().forSelect(resultType);
+        return new SelectImpl<>(this.getEntityManager(), resultType, this.getDatabaseFormat());
     }
 
     default <T> Update<T> getDaoForUpdate(Class<T> entityType) {
-        return this.getDao().forUpdate(entityType);
+        return new UpdateImpl<>(this.getEntityManager(), entityType, this.getDatabaseFormat());
     }
 
     default <T> Delete<T> getDaoForDelete(Class<T> entityType) {
-        return this.getDao().forDelete(entityType);
+        return new DeleteImpl<>(this.getEntityManager(), entityType, this.getDatabaseFormat());
     }
 
     Dao getDao();
@@ -92,6 +96,8 @@ public interface PersistenceUnitContext extends AutoCloseable {
         puMetaData.build(persistenceContext.getMetaData(false).getNode(), persistenceContext);
         return puMetaData;
     }
+    
+    EntityMetaDataAccess getMetaDataAccess();
     
     default PersistenceUnitMetaData getMetaData() {
         return this.getMetaData(true);

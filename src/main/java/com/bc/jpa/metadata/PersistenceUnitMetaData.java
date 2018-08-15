@@ -18,39 +18,42 @@ package com.bc.jpa.metadata;
 
 import com.bc.node.Node;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import javax.persistence.EntityManagerFactory;
 
 /**
  * @author Chinomso Bassey Ikwuagwu on Oct 27, 2017 7:30:20 PM
  */
-public interface PersistenceUnitMetaData {
+public interface PersistenceUnitMetaData extends PersistenceUnitNode {
     
-    Node<String> getNode();
-    
-    Set<Class> getEntityClasses();
+    Collection<Class> getEntityClasses();
 
     Class getEntityClass(
             String catalog, String schema, String tableName);
     
+    @Override
     String getCatalogName(Class entityClass);
     
     default String getDatabaseName(Class entityClass) {
         return this.getCatalogName(entityClass);
     }
     
+    @Override
     String getSchemaName(Class entityClass);
     
     Class getEntityClass(String tableName);
 
+    @Override
     String getTableName(Class entityClass);
     
     String getIdColumnName(Class entityClass);
     
+    @Override
     String [] getColumnNames(Class entityClass);
 
+    @Override
     int getColumnIndex(Class entityClass, String column);
 
     /**
@@ -63,7 +66,7 @@ public interface PersistenceUnitMetaData {
      * method {@link #getNode()}
      * @throws SQLException 
      */
-    Node<String> build(Node<String> persistenceNode, 
+    PersistenceUnitNode build(Node<String> persistenceNode, 
             Function<String, EntityManagerFactory> emfProvider) throws SQLException;
     
     Class getColumnClass(Class entityClass, int columnIndex);
@@ -82,6 +85,7 @@ public interface PersistenceUnitMetaData {
 
     boolean isAnyListedTableExisting();
 
+    @Override
     boolean isAnyTableExisting();
 
     /**

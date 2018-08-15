@@ -68,8 +68,9 @@ System.out.println(puName+" = "+metaData.getEntityClasses(puName));
             
             return jpaContext;
             
-        }catch(Exception e) {
-            throw new RuntimeException(e);
+        }catch(Throwable t) {
+            t.printStackTrace();
+            throw new RuntimeException(t);
         }
     }
     
@@ -125,8 +126,8 @@ System.out.println(puName+" = "+metaData.getEntityClasses(puName));
 
     public JpaContext getLbJpaContext() {
         if(lbJpaContext == null) {
-            final String filename = System.getProperty("user.home") + ""
-                    + "/Documents/NetBeansProjects/looseboxespu/src/test/resources/META-INF/persistence.xml";
+            final String filename = System.getProperty("user.home") + 
+                    "/Documents/NetBeansProjects/looseboxespu/src/test/resources/META-INF/persistence.xml";
             lbJpaContext = loadJpaContext(filename, com.looseboxes.pu.References.ENUM_TYPES);
         }
         return lbJpaContext;

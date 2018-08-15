@@ -39,14 +39,17 @@ public class DatabaseFormatImplTest {
     
     private static DatabaseFormatImpl instance;
     
-    public DatabaseFormatImplTest() {
-    }
+    public DatabaseFormatImplTest() { }
     
     @BeforeClass
     public static void setUpClass() {
-        instance = new DatabaseFormatImpl(
-                TestApp.getInstance().getLbJpaContext(), new MySQLDateTimePatterns()
-        );
+        try{
+            instance = new DatabaseFormatImpl(
+                    TestApp.getInstance().getLbJpaContext(), new MySQLDateTimePatterns()
+            );
+        }catch(Throwable t) {
+            t.printStackTrace();
+        }
     }
     
     @AfterClass
@@ -66,6 +69,14 @@ public class DatabaseFormatImplTest {
      */
     @Test
     public void testToDatabaseFormat() {
+        try{
+            this.doTestToDatabaseFormat();
+        }catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void doTestToDatabaseFormat() {
         System.out.println("toDatabaseFormat");
         Object result;
         result = instance.toDatabaseFormat(Product.class, "productcategoryid", "fashion", null);

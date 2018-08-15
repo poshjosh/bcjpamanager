@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.bc.jpa.context;
+package com.bc.jpa.context.eclipselink;
 
 import com.bc.jpa.EntityManagerFactoryCreator;
-import com.bc.jpa.dao.Dao;
-import com.bc.jpa.dao.eclipselink.DaoEclipselinkOptimized;
+import com.bc.jpa.context.PersistenceContextImpl;
+import com.bc.jpa.context.PersistenceUnitContext;
 import com.bc.jpa.metadata.PersistenceMetaData;
 import com.bc.sql.SQLDateTimePatterns;
 import java.net.URI;
@@ -60,11 +59,14 @@ public class PersistenceContextEclipselinkOptimized extends PersistenceContextIm
     }
 
     @Override
-    public Dao getDao(String persistenceUnit) {
-        
-        return new DaoEclipselinkOptimized(
-                this.getEntityManager(persistenceUnit), 
-                this.getDatabaseFormat(persistenceUnit)
-        );
+    public PersistenceUnitContext createPersistenceUnitContext(
+            String persistenceUnit,
+            EntityManagerFactoryCreator emfCreator,
+            SQLDateTimePatterns sqlDateTimePatterns) {
+
+            return new PersistenceUnitContextEclipselinkOptimized(
+                    this, persistenceUnit, 
+                    this.getMetaData(false).getMetaData(persistenceUnit), 
+                    emfCreator, sqlDateTimePatterns);
     }
 }

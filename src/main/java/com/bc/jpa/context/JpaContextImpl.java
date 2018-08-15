@@ -1,5 +1,6 @@
 package com.bc.jpa.context;
 
+import com.bc.jpa.context.eclipselink.PersistenceContextEclipselinkOptimized;
 import com.bc.jpa.EntityManagerFactoryCreatorImpl;
 import com.bc.jpa.EntityReference;
 import com.bc.jpa.controller.EntityController;
@@ -25,7 +26,6 @@ import java.util.Properties;
 import com.bc.jpa.dao.Select;
 import com.bc.jpa.dao.Update;
 import com.bc.jpa.dao.Delete;
-import com.bc.jpa.dao.eclipselink.DaoEclipselinkOptimized;
 import com.bc.xml.PersistenceXmlDomImpl;
 import com.bc.jpa.search.TextSearch;
 import java.sql.SQLException;
@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import javax.persistence.EntityManagerFactory;
 import com.bc.jpa.EntityMemberAccess;
+import com.bc.jpa.metadata.EntityMetaDataAccess;
 
 /**
  * @(#)DefaultControllerFactory.java   28-Jun-2014 18:47:01
@@ -107,7 +108,7 @@ public class JpaContextImpl implements JpaContext, Serializable {
     
     @Override
     public Dao getDao(Class entityType) {
-        return new DaoEclipselinkOptimized(this.getEntityManager(entityType), this.getDatabaseFormat());
+        return this.getPersistenceContext().getContext(puName).getDao();
     }
     
     @Override
@@ -118,39 +119,36 @@ public class JpaContextImpl implements JpaContext, Serializable {
     
     @Override
     public EntityManagerFactory getEntityManagerFactory(Class entityClass) { 
-        
         return this.getEntityManagerFactory(this.puName);
     }
 
     @Override
     public <T> Select<T> getDaoForSelect(Class<T> resultType) {
-        return this.getDao().forSelect(resultType);
+        return this.getPersistenceContext().getContext(puName).getDaoForSelect(resultType);
     }
     
     @Override
     public <T> Select<T> getDaoForSelect(Class entityType, Class<T> resultType) {
-        return this.getDao().forSelect(resultType).from(entityType);
+        return this.getPersistenceContext().getContext(puName).getDaoForSelect(resultType).from(entityType);
     }
 
     @Override
     public <T> Update<T> getDaoForUpdate(Class<T> entityType) {
-        return this.getDao().forUpdate(entityType).from(entityType);
+        return this.getPersistenceContext().getContext(puName).getDaoForUpdate(entityType);
     }
 
     @Override
     public <T> Delete<T> getDaoForDelete(Class<T> entityType) {
-        return this.getDao().forDelete(entityType).from(entityType);
+        return this.getPersistenceContext().getContext(puName).getDaoForDelete(entityType);
     }
     
     @Override
     public EntityController getEntityController(String database, String schema, String table) {
-        
         return this.getEntityController(this.metaData.getEntityClass(database, schema, table));
     }
     
     @Override
     public <E> EntityController<E, Object> getEntityController(Class<E> entityClass) {
-        
         return getEntityController(entityClass, null);
     }
 
@@ -263,7 +261,12 @@ public class JpaContextImpl implements JpaContext, Serializable {
     public <E> EntityMemberAccess<E, Object> getEntityMemberAccess(String persistenceUnit, Class<E> entityClass) {
         return getPersistenceContext().getEntityMemberAccess(persistenceUnit, entityClass);
     }
-    
+
+    @Override
+    public EntityMetaDataAccess getMetaDataAccess(String persistenceUnitName) {
+        return getPersistenceContext().getMetaDataAccess(persistenceUnitName);
+    }
+
     /////////////////// DELEGATING TO PersistenceUnitContext ///////////////////
 
     @Override
@@ -321,6 +324,11 @@ public class JpaContextImpl implements JpaContext, Serializable {
         return getPersistenceContext().getContext(puName).getEntityMemberAccess(entityClass);
     }
 
+    @Override
+    public EntityMetaDataAccess getMetaDataAccess() {
+        return getPersistenceContext().getContext(puName).getMetaDataAccess();
+    }
+    
     @Override
     public PersistenceContext getPersistenceContext() {
         if(persistenceContext == null) {

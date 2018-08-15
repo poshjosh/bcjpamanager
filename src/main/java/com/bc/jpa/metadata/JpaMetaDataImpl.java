@@ -10,6 +10,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.JoinColumn;
@@ -258,7 +260,7 @@ public class JpaMetaDataImpl implements JpaMetaData, Serializable {
     }
 
     @Override
-    public Set<Class> getEntityClasses() {
+    public Collection<Class> getEntityClasses() {
         return unitMetaData.getEntityClasses();
     }
 
@@ -308,7 +310,7 @@ public class JpaMetaDataImpl implements JpaMetaData, Serializable {
     }
 
     @Override
-    public Node<String> build(Node<String> persistenceNode, Function<String, EntityManagerFactory> emfProvider) throws SQLException {
+    public PersistenceUnitNode build(Node<String> persistenceNode, Function<String, EntityManagerFactory> emfProvider) throws SQLException {
         return unitMetaData.build(persistenceNode, emfProvider);
     }
 
@@ -353,8 +355,103 @@ public class JpaMetaDataImpl implements JpaMetaData, Serializable {
     }
 
     @Override
+    public boolean isExisting(String database, String schema, String table) {
+        return this.unitMetaData.isExisting(database, schema, table);
+    }
+
+    @Override
+    public Node<String> findFirstTableNodeOrException(Class entityClass) {
+        return this.unitMetaData.findFirstTableNodeOrException(entityClass);
+    }
+
+    @Override
     public <E> E find(Class<E> entityType, String name) {
         return entityReference.find(entityType, name);
+    }
+
+    @Override
+    public Optional<Node<String>> findFirstNode(Node<String> offset, int nodeLevel, String nodeValue) {
+        return unitMetaData.findFirstNode(offset, nodeLevel, nodeValue);
+    }
+
+    @Override
+    public Node<String> findFirstNodeOrException(Node<String> offset, int nodeLevel, String nodeValue) {
+        return unitMetaData.findFirstNodeOrException(offset, nodeLevel, nodeValue);
+    }
+
+    @Override
+    public boolean isRoot() {
+        return unitMetaData.isRoot();
+    }
+
+    @Override
+    public boolean isLeaf() {
+        return unitMetaData.isLeaf();
+    }
+
+    @Override
+    public int getLevel() {
+        return unitMetaData.getLevel();
+    }
+
+    @Override
+    public Node<String> getRoot() {
+        return unitMetaData.getRoot();
+    }
+
+    @Override
+    public Optional<Node<String>> findFirstChild(String... path) {
+        return unitMetaData.findFirstChild(path);
+    }
+
+    @Override
+    public Optional<Node<String>> findFirst(Node<String> offset, String... path) {
+        return unitMetaData.findFirst(offset, path);
+    }
+
+    @Override
+    public Optional<Node<String>> findFirstChild(Predicate<Node<String>> nodeTest) {
+        return unitMetaData.findFirstChild(nodeTest);
+    }
+
+    @Override
+    public Optional<Node<String>> findFirst(Node<String> offset, Predicate<Node<String>> nodeTest) {
+        return unitMetaData.findFirst(offset, nodeTest);
+    }
+
+    @Override
+    public boolean addChild(Node<String> child) {
+        return unitMetaData.addChild(child);
+    }
+
+    @Override
+    public List<Node<String>> getChildren() {
+        return unitMetaData.getChildren();
+    }
+
+    @Override
+    public String getName() {
+        return unitMetaData.getName();
+    }
+
+    @Override
+    public Optional<String> getValue() {
+        return unitMetaData.getValue();
+    }
+
+    @Override
+    public String getValueOrDefault(String outpufIfNone) {
+        return unitMetaData.getValueOrDefault(outpufIfNone);
+    }
+
+    @Override
+    public Optional<Node<String>> getParent() {
+        return unitMetaData.getParent();
+    }
+
+    @Override
+    public Node<String> getParentOrDefault(Node<String> outputIfNone) {
+        return unitMetaData.getParentOrDefault(outputIfNone);
     }
 
     @Override
